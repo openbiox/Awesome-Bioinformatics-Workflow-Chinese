@@ -1,0 +1,221 @@
+---
+title: Scalable analyses for big scRNA-seq data with Bioconductor 
+author:
+- name: Aaron T. L. Lun
+  affiliation: &CRUK Cancer Research UK Cambridge Institute, Li Ka Shing Centre, Robinson Way, Cambridge CB2 0RE, United Kingdom
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{11. Scalability for big data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+output:
+  BiocStyle::html_document:
+    titlecaps: false
+    toc_float: true
+bibliography: ref.bib
+---
+
+```{r style, echo=FALSE, results='hide', message=FALSE, cache=FALSE}
+library(BiocStyle)
+library(knitr)
+opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, cache=TRUE)
+opts_chunk$set(fig.asp=1)
+```
+
+```{r, cache=FALSE, echo=FALSE, results="hide"}
+simpleSingleCell:::.compile("tenx") # PBMC
+```
+
+# Overview
+
+Advances in single-cell RNA sequencing (scRNA-seq) technologies have increased the number of cells that can be assayed in routine experiments.
+For effective data analysis, the computational methods need to scale with the increasing size of scRNA-seq data sets.
+Scalability requires greater use of parallelization, out-of-memory representations and fast approximate algorithms to process data efficiently.
+Fortunately, this is easy to achieve within the Bioconductor ecosystem.
+This workflow will discuss how to tune the previous analysis pipelines for greater speed to handle large scRNA-seq data sets.
+
+# Out of memory representations
+
+As we have previously discussed, the count matrix is the central structure around which our analyses are based.
+In the previous workflows, this has been held fully in memory as a dense `matrix` or as a sparse `dgCMatrix`.
+Howevever, in-memory representations may not be feasible for very large data sets, especially on machines with limited memory.
+For example, the 1.3 million brain cell data set from 10X Genomics [@zheng2017massively] would require over 100 GB of RAM to hold as a `matrix` and around 30 GB as a `dgCMatrix`.
+This makes it challenging to investigate the data on anything less than a high-performance computing system.
+
+The obvious solution is to use a file-backed matrix representation where the data are held on disk and subsets are retrieved into memory as requested.
+While a number of implementations of file-backed matrices are available (e.g., `r CRANpkg("bigmemory")`, `r Biocpkg("matter")`),
+we will be using the implementation from the `r Biocpkg("HDF5Array")` package.
+This uses the popular HDF5 format as the underlying data store, which provides a measure of standardization and portability across systems. 
+We demonstrate with a subset of 20,000 cells from the 1.3 million brain cell data set, as provided by the `r Biocpkg("TENxBrainData")` package^[We could instead obtain the full-sized data set by using `TENxBrainData()`, but we will use the smaller data set here for demonstration purposes.].
+
+```{r}
+library(TENxBrainData)
+sce <- TENxBrainData20k() # downloads once and caches it for future use.
+sce
+```
+
+Examination of the `SingleCellExperiment` object indicates that the count matrix is a `HDF5Matrix`.
+From a comparison of the memory usage, it is clear that this matrix object is simply a stub that points to the much larger HDF5 file that actually contains the data.
+This avoids the need for large RAM availability during analyses.
+
+```{r}
+counts(sce)
+object.size(counts(sce))
+file.info(path(counts(sce)))$size
+```
+
+Manipulation of the count matrix will generally result in the creation of a `DelayedArray` (from the `r Biocpkg("DelayedArray")` package).
+This stores delayed operations in the matrix object, to be executed when the modified matrix values are realized for use in calculations. 
+The use of delayed operations avoids the need to write the modified values to a new file at every operation, which would unnecessarily require time-consuming disk I/O.
+
+```{r}
+tmp <- counts(sce)
+tmp <- log2(tmp + 1)
+tmp
+```
+
+Many functions described in the previous workflows are capable of accepting `HDF5Matrix` objects^[If you find one that is not, please contact the maintainers.].
+This is powered by the availability of common methods for all matrix representations (e.g., subsetting, combining, methods from `r Biocpkg("DelayedMatrixStats")`)
+as well as representation-agnostic C++ code using `r Biocpkg("beachmat")` [@lun2018beachmat].
+For example, we compute quality control (QC) metrics below with the same `calculateQCMetrics()` function that we used in the other workflows.
+
+```{r}
+library(scater)
+sce <- calculateQCMetrics(sce, compact=TRUE) # compacting for clean output.
+sce$scater_qc
+```
+
+Needless to say, data access from file-backed representations is slower than that from in-memory representations (assuming the latter is not moved into swap space).
+The time spent retrieving data from disk is an unavoidable cost of memory efficiency.
+
+**Comments from Aaron:**
+
+- By default, file locking is necessary for reading from HDF5 files via the `r Biocpkg("Rhdf5lib")` library, but this may be disabled on some file systems.
+Users can set the `HDF5_USE_FILE_LOCKING` environment variable to `FALSE` to avoid this requirement.
+
+# Parallelization
+
+In many Bioconductor packages, different parallelization mechanisms are easily tested through the `r Biocpkg("BiocParallel")` framework.
+We construct a `BiocParallelParam` object that specifies the type of parallelization that we wish to use.
+For example, we might use forking^[Not available on Windows.] across 2 cores:
+
+```{r}
+bpp <- MulticoreParam(2)
+bpp
+```
+
+Another approach would be to distribute jobs across a network of computers:
+
+```{r}
+bpp <- SnowParam(5)
+bpp
+```
+
+High-performance computing systems typically use job schedulers across a cluster of compute nodes.
+We can distribute jobs via the scheduler using the `BatchtoolsParam` class.
+The example below assumes a SLURM cluster, though the settings can be easily^[In general. Some fiddling may be required, depending on the idiosyncrasies of the cluster set-up.] configured for a particular system (see `r Biocpkg("BiocParallel", "BiocParallel_BatchtoolsParam.pdf", "here")` for details).
+
+```{r, eval=FALSE}
+bpp <- BatchtoolsParam(10, cluster="slurm",
+	resources=list(walltime=20000, memory=8000, ncpus=1))
+```
+
+Once we have defined the parallelization mechanism, we can pass the `BiocParallelParam` object to the function that we wish to run.
+This will instruct the function to run operations in parallel where it is allowed to (as defined by the developer).
+Different functions may parallelize operations across cells, or genes, or batches of data, depending on what is most appropriate.
+In the example below, we parallelize the QC calculations (across cells) using two cores:
+
+```{r}
+alt <- calculateQCMetrics(sce, BPPARAM=MulticoreParam(2), compact=TRUE)
+```
+
+This yields the same result as the single-core calculation, but faster.
+
+```{r, echo=FALSE}
+if (!isTRUE(all.equal(alt, sce))) {
+	stop("parallelization changes the result")
+}
+```
+
+```{r}
+all.equal(alt, sce) 
+```
+
+**Comments from Aaron:**
+
+- Efficiently combining parallelization with file-backed matrix representations is likely to require systems that support parallel I/O.
+
+# Fast approximate algorithms
+
+## Nearest neighbours searching
+
+Identification of neighbouring cells in PC or expression space is a common procedure that is used in many functions, e.g., `buildSNNGraph()`, `doubletCells()`.
+The default is to favour accuracy over speed by using an exact nearest neighbour search, implemented with the k-means for k-nearest neighbours algorithm [@wang2012fast]. 
+However, for large data sets, it may be preferable to use a faster approximate approach.
+The `r Biocpkg("BiocNeighbors")` framework makes it easy to switch between search options.
+
+To demonstrate, we will use the PBMC data from the `r simpleSingleCell:::.link("tenx", NULL, "previous workflow")`:
+
+```{r}
+sce.pbmc <- readRDS("pbmc_data.rds")
+```
+
+We had `r simpleSingleCell:::.link("tenx", "Clustering with graph-based methods", "previously")` generated a shared nearest neighbor graph with an exact neighbour search.
+We repeat this below using an approximate search, implemented using the [Annoy](https://github.com/spotify/Annoy) algorithm.
+This involves constructing a `BiocNeighborParam` object to specify the search algorithm, and passing it to the `buildSNNGraph()` function.
+
+```{r}
+library(scran)
+library(BiocNeighbors)
+snn.gr <- buildSNNGraph(sce.pbmc, BNPARAM=AnnoyParam(), use.dimred="PCA")
+```
+
+The results from the exact and approximate searches are consistent with most clusters from the former re-appearing in the latter.
+This suggests that the inaccuracy from the approximation can be largely ignored.
+However, if the approximation was unacceptable, it would be simple to switch back to an exact algorithm by altering `BNPARAM`.
+
+```{r}
+clusters <- igraph::cluster_walktrap(snn.gr)
+table(Exact=sce.pbmc$Cluster, Approx=clusters$membership)
+```
+
+**Comments from Aaron:**
+
+- The neighbour search algorithms are interoperable with `r Biocpkg("BiocParallel")`, so it is straightforward to parallelize the search for greater speed.
+
+## Principal components analysis
+
+We have already introduced the `IrlbaParam()` function, which creates an `IrlbaParam` parameter object from the `r Biocpkg("BiocSingular")` package.
+If passed to a function via the `BSPARAM=` argument, this instructs the function to use fast approximate methods from `r CRANpkg("irlba")` to perform SVD or PCA.
+However, this is not the only SVD strategy that is provided in the `r Biocpkg("BiocSingular")` framework.
+For example, one could perform randomized SVD^[Via the `r CRANpkg("rsvd")` package.] to perform an approximate SVD.
+
+```{r}
+library(BiocSingular)
+
+# As the name suggests, it is random, so we need to set the seed.
+set.seed(999)    
+r.out <- BiocSingular::runPCA(t(logcounts(sce.pbmc)), rank=20, 
+    BSPARAM=RandomParam(deferred=TRUE))
+str(r.out)
+
+# For comparison:    
+i.out <- BiocSingular::runPCA(t(logcounts(sce.pbmc)), rank=20, 
+    BSPARAM=IrlbaParam(fold=Inf))
+str(i.out)
+```
+
+Users can often obtain considerable speed-ups through a careful choice of `BSPARAM=` that considers the structure of the underlying matrix data.
+For example, setting `deferred=TRUE` will defer the centering during matrix multiplications to avoid loss of sparsity.
+Another consideration would be whether the data are stored on file, in which case one may prefer an algorithm that performs fewer reads at the expense of more computations.
+
+# Concluding remarks
+
+All software packages used in this workflow are publicly available from the Comprehensive R Archive Network (https://cran.r-project.org) or the Bioconductor project (http://bioconductor.org).
+The specific version numbers of the packages used are shown below, along with the version of the R installation.
+
+```{r}
+sessionInfo()
+```
+
+# References 

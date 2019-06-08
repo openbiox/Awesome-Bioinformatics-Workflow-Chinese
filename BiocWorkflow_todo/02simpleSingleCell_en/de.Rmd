@@ -1,0 +1,302 @@
+---
+title: Detecting differental expression from single-cell RNA-seq data
+author: 
+- name: Aaron T. L. Lun
+  affiliation: &CRUK Cancer Research UK Cambridge Institute, Li Ka Shing Centre, Robinson Way, Cambridge CB2 0RE, United Kingdom
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{10. Detecting differential expression}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}    
+output: 
+  BiocStyle::html_document:
+    titlecaps: false
+    toc_float: true
+bibliography: ref.bib
+---
+    
+```{r style, echo=FALSE, results='hide', message=FALSE, cache=FALSE}
+library(BiocStyle)
+library(knitr)
+opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, cache=TRUE)
+opts_chunk$set(fig.asp=1)
+```
+
+```{r, cache=FALSE, echo=FALSE, results="hide"}
+simpleSingleCell:::.compile("reads") # 416B
+simpleSingleCell:::.compile("batch") # pancreas
+```
+
+# Overview
+
+Here, we describe some of the more theoretical aspects of detecting differential expression (DE) from single-cell RNA sequencing (scRNA-seq) data.
+This includes the basis of blocking on uninteresting factors of variation in `findMarkers()`;
+     the use of Wilcoxon rank sum tests in `overlapExprs()`;
+     incorporating other DE analysis results with `combineMarkers()`;
+     and some caveats on the interpretation of DE $p$-values in scRNA-seq contexts.
+
+# Blocking on uninteresting factors of variation
+
+## Using the `block=` argument
+
+Previous workflows (`r simpleSingleCell:::.link("reads", "Detecting marker genes between clusters", "here")` and `r simpleSingleCell:::.link("batch", "Using the corrected values in downstream analyses", "here")`) used the `block=` argument in `findMarkers()` to account for uninteresting factors of variation.
+This will instruct `findMarkers()` to perform pairwise $t$-tests between clusters using only cells on the same level of the blocking factor. 
+It will then combine $p$-values from different plates using Stouffer's Z method to obtain a single $p$-value per gene.
+
+```{r}
+library(SingleCellExperiment)
+sce.pancreas <- readRDS("pancreas_data.rds") 
+
+# Same code as in pancreas MNN correction workflow.
+library(scran)
+m.out <- findMarkers(sce.pancreas, sce.pancreas$Cluster, 
+    block=sce.pancreas$batch, direction="up", assay.type="original") 
+demo <- m.out[["1"]] 
+as.data.frame(demo[demo$Top <= 5,1:3])
+```
+
+Intra-batch comparisons with `block=` are robust to difference in the log-fold changes or variance between batches.
+However, we need to assume that each pair of clusters is present in at least one batch.
+In scenarios where cells from two clusters never co-occur in the same batch, the comparison will be impossible and `NA`s will be reported in the output.
+
+## Using the `design=` argument
+
+Another approach is to define a design matrix containing the batch of origin as the sole factor.
+`findMarkers()` will then fit a linear model to the log-expression values, similar to the use of `r Biocpkg("limma")` for bulk RNA sequencing data [@ritchie2015limma].
+This handles situations where multiple batches contain unique clusters, as comparisons can be implicitly performed via shared cell types in each batch.
+There is also a slight increase in power when information is shared across clusters for variance estimation.
+
+```{r}
+# Setting up the design matrix (we remove intercept for full rank
+# in the final design matrix with the cluster-specific terms).
+design <- model.matrix(~sce.pancreas$batch)
+design <- design[,-1,drop=FALSE]
+
+m.alt <- findMarkers(sce.pancreas, sce.pancreas$Cluster, 
+    design=design, direction="up", assay.type="original")
+demo <- m.alt[["1"]]
+as.data.frame(demo[demo$Top <= 5,1:3])
+```
+
+The use of a linear model makes a few some strong assumptions, necessitating some caution when interpreting the results.
+The batch effect across cell types is assumed to be homogeneous.
+If this is not the case, the variance will be inflated and the log-fold change estimates will be distorted.
+Variances are also assumed to be equal across groups, which is not true in general.
+In particular, the presence of clusters in which a gene is silent will shrink the residual variance towards zero, 
+preventing the model from penalizing genes with high variance in other clusters.
+Thus, we generally recommend the use of `block=` where possible.
+
+# Using the Wilcoxon rank sum test
+
+The `overlapExprs()` function uses the Wilcoxon rank sum test to detect uneven mixing of the distributions of expression values between clusters.
+The effect size is reported as the probability of randomly sampling one observation in one cluster that is greater than a random observation in another cluster.
+This prioritizes genes where there is clear separation between the distributions of expression values of different clusters.
+We demonstrate the use of `overlapExprs()` on the 416B data set from the `r simpleSingleCell:::.link("reads", NULL, "previous workflow")`,
+detecting DE genes between clusters while blocking on the plate of origin.
+
+```{r}
+sce.416b <- readRDS("416B_data.rds")
+o.out <- overlapExprs(sce.416b, group=sce.416b$cluster, block=sce.416b$Plate)
+head(o.out[["1"]]) # top DEGs for cluster 1 against the others.
+```
+
+Effect sizes close to zero indicate that the gene is downregulated, while effect sizes close to unity correspond to upregulation.
+The top DE genes all exhibit strong separation between cluster 1 and the others (Figure \@ref(fig:viol-de-wilcox)).
+
+```{r viol-de-wilcox, fig.cap="Distribution of log-normalized expression values for the top 10 DE genes involving cluster 1 with the Wilcoxon rank sum test, stratified by cluster assignment and coloured by the plate of origin for each cell."}
+library(scater)
+plotExpression(sce.416b, x="cluster", colour_by="Plate",
+    features=head(rownames(o.out[[1]])))
+```
+
+Wilcoxon tests provide a stronger guarantee of cluster separation than the $t$-tests in `findMarkers()` as the latter can have large effect sizes driven by a minority of cells.
+This promotes the identification of good marker genes that discriminate between clusters.
+The downside is that they are slower, the effect size is more difficult to interpret and the test result is not entirely robust to differences in scaling biases across clusters.
+
+# Using other DE analysis results
+
+It is possible to perform marker gene detection based on results from other DE analysis methods.
+For example, consider the `voom` approach in the `r Biocpkg("limma")` package [@law2014voom].
+
+```{r}
+library(limma)
+design <- model.matrix(~0 + cluster + Plate, data=colData(sce.416b))
+colnames(design)
+
+keep <- calcAverage(sce.416b) > 1 # filter to remove very low-abundance genes.
+summary(keep)
+
+y <- convertTo(sce.416b, subset.row=keep)
+v <- voom(y, design)
+fit <- lmFit(v, design)
+```
+
+We perform pairwise moderated $t$-tests between clusters while blocking on the plate of origin.
+Here, we use the TREAT strategy [@mccarthy2009treat] to test for log-fold changes that are significantly greater than 0.5.
+
+```{r}
+clust.terms <- head(colnames(design), length(unique(sce.416b$cluster)))
+all.results <- all.pairs <- list()
+counter <- 1L
+
+for (x in seq_along(clust.terms)) {
+    for (y in seq_len(x-1L)) {
+        con <- integer(ncol(design))
+        con[x] <- 1
+        con[y] <- -1
+        fit2 <- contrasts.fit(fit, con)
+        fit2 <- treat(fit2, robust=TRUE, lfc=0.5)
+
+        res <- topTreat(fit2, n=Inf, sort.by="none")
+        all.results[[counter]] <- res
+        all.pairs[[counter]] <- c(clust.terms[x], clust.terms[y])
+        counter <- counter+1L
+
+        # Also filling the reverse comparison.
+        res$logFC <- -res$logFC
+        all.results[[counter]] <- res
+        all.pairs[[counter]] <- c(clust.terms[y], clust.terms[x])
+        counter <- counter+1L
+    }
+}
+```
+
+The results of this comparison are consolidated into a single marker list for each cluster with the `combineMarkers()` function.
+This yields an ordering of genes that can be interpreted in the same manner as discussed `r simpleSingleCell:::.link("reads", "Detecting marker genes between clusters", "previously")` for `findMarkers()` output.
+
+```{r}
+all.pairs <- do.call(rbind, all.pairs)
+combined <- combineMarkers(all.results, all.pairs, pval.field="P.Value")
+as.data.frame(head(combined[["cluster1"]][,1:3]))
+```
+
+# Caveats with interpreting DE $p$-values
+
+## Data dredging from clustering
+
+It is worth noting that all of our DE strategies for detecting marker genes between clusters are statistically flawed to some extent.
+The DE analysis is performed on the same data used to obtain the clusters, which represents "data dredging" (also known as fishing or data snooping).
+The hypothesis of interest - that are there differences between clusters? - is formulated from the data, 
+so we are more likely to get a positive result when we re-use the data set to test that hypothesis.
+
+The practical effect of data dredging is best illustrated with a simple simulation.
+We simulate i.i.d. normal values, perform k-means clustering and test for DE between clusters of cells with `findMarkers()`.
+The resulting distribution of $p$-values is heavily skewed towards low values (Figure \@ref(fig:pval-dist)).
+Thus, we can detect "significant" differences between clusters even in the absence of any real substructure in the data.
+This effect arises from the fact that clustering, by definition, yields groups of cells that differ in their coordinates in expression space. 
+Testing for DE genes between clusters will inevitably yield some significant results as that is how the clusters were defined in the first place.
+
+```{r pval-dist, fig.cap="Distribution of $p$-values from a DE analysis between two clusters in a simulation with no true subpopulation structure."}
+set.seed(0)
+y <- matrix(rnorm(100000), ncol=200)
+clusters <- kmeans(t(y), centers=2)$cluster
+out <- findMarkers(y, clusters)
+hist(out[[1]]$p.value, col="grey80", xlab="p-value")
+```
+
+By and large, this effect does not cause problems for marker gene detection as the DE statistics from `findMarkers()` and counterparts are primarily used for ranking.
+It does become an issue when the $p$-values are used to define "significant differences" between clusters with respect to an error rate threshold.
+Meaningful interpretation of error rates require consideration of the long-run behaviour, i.e., the rate of incorrect rejections if the experiment were repeated many times.
+The concept of statistical significance for differences between clusters is not applicable if clusters are not stably reproducible across (hypothetical) replicate experiments.
+
+To overcome this conceptual hurdle, we need to annotate our clusters based on a few marker genes.
+This allows us to use the annotated clusters as proxies for the true (and presumably reproducible) biological subpopulations.
+We might then be tempted to interpret the significant genes as being DE between subpopulations.
+However, this would result in loss of error control when the clusters are not stable, due to overfitting of the cluster definitions for true null genes.
+This effect is exacerbated as the clusters become more unstable, e.g., due to poor separation between the underlying populations.
+
+## Considering sample effects
+
+The naive application of DE analysis methods will treat counts from the same cluster of cells as replicate observations.
+This is not the most relevant level of replication when cells are derived from the same biological sample (i.e., cell culture, animal or patient).
+DE analyses that treat cells as replicates fail to properly model the sample-to-sample variability [@lun2017overcoming].
+The latter is arguably the more important level of replication as different samples will necessarily be generated if the experiment is to be replicated.
+Indeed, the use of cells as replicates only masks the fact that the sample size is actually one in an experiment involving a single biological sample.
+
+The "most correct" strategy for accommodating two levels of replication is to use a (generalized) linear mixed model.
+However, these are difficult to implement from both a theoretical and practical perspective - see [here](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html) for an in-depth discussion.
+A faster approach is to use a summation strategy [@lun2017overcoming], where all cells in each combination of sample and condition (or cluster) are summed together.
+This yields a single pseudo-bulk count profile per combination, to which standard methods like `r Biocpkg("edgeR")` or `r Biocpkg("limma")` can be applied.
+
+# Using pseudo-bulk counts 
+
+We demonstrate this procedure on the `r simpleSingleCell:::.link("reads", NULL, "416B data set")` again.
+We create a factor containing all combinations of the per-cell factors of interest.
+Here, the factors of interest are the assigned cluster and the plate of origin for each cell^[Cluster is nested in oncogene induction status so that latter will not be used here.].
+All cells from one plate with the same oncogene induction status were obtained from the same biological sample.
+
+```{r}
+combos <- with(colData(sce.416b), paste(cluster, Plate, sep="."))
+(num <- table(combos))
+```
+
+We sum the count profiles for all cells in each level of `combos`.
+This yields a set of pseudo-bulk samples that are more amenable to standard DE analysis as the counts are higher and per-observation variance is lower.
+It also ensures that the variance is modelled across samples rather than across cells.
+Each sample is represented no more than once for each condition in the `summed` matrix, avoiding problems from unmodelled correlations between samples. 
+
+```{r}
+library(scater)
+summed <- sumCountsAcrossCells(counts(sce.416b), combos)
+head(summed)
+```
+
+We perform a standard `r Biocpkg("edgeR")` analysis using the quasi-likelihood (QL) framework [@chen2016from] to identify differential expression between clusters.
+We ignore spike-in transcripts and low-abundance genes, and we compute normalization factors^[Not the same as size factors!] using the `calcNormFactors()` function.
+
+```{r}
+library(edgeR)
+y <- DGEList(summed)
+y <- y[aveLogCPM(y) > 1 & !isSpike(sce.416b),]
+y <- calcNormFactors(y)
+```
+
+We set up the design matrix so that the plate of origin is an additive effect.
+
+```{r}
+sum.terms <- strsplit(colnames(y), split="\\.")
+sum.clust <- unlist(lapply(sum.terms, "[[", i=1))
+sum.plate <- unlist(lapply(sum.terms, "[[", i=2))
+design <- model.matrix(~0 + sum.clust + sum.plate)
+```
+
+We estimate the negative binomial and QL dispersions using `estimateDisp()` and `glmQLFit()`, respectively.
+Larger dispersions represent greater variability between replicate plates, not cells.
+
+```{r}
+y <- estimateDisp(y, design)
+summary(y$trended.dispersion)    
+fit <- glmQLFit(y, design, robust=TRUE)
+summary(fit$df.prior)    
+```
+
+We test for DE between the first two clusters using `glmQLFTest()`.
+This yields a number of potentially interesting DE genes involved in cell division,
+consistent with the differences in cell cycle activity between clusters.
+
+```{r}
+res <- glmQLFTest(fit, contrast=c(1, -1, 0, 0, 0, 0))
+summary(decideTests(res))
+(top <- topTags(res))
+```
+
+The DE analysis on pseudo-bulk counts does not explicitly penalize DE genes that are highly variable across cells within each sample.
+One could argue that this is undesirable as DE genes with low expression variance across cells are more discriminative and should be more highly ranked.
+In practice, this is less of an issue than might be expected (Figure \@ref(fig:violde)).
+The effect size will naturally be smaller when cell-to-cell expression is highly variable, simply because the means of each group must be closer together when the distributions mix.
+This means that the analysis still implicitly favours DE genes with low cell-to-cell variance.
+Summation also avoids harshly penalizing genes for high technical variability, which might otherwise reduce the ranking of good low-abundance markers. 
+
+```{r violde, fig.height=10, fig.asp=1.5, fig.cap="Distribution of log-normalized expression values for the top 10 DE genes between clusters 1 and 2 from the summation strategy, stratified by cluster assignment and coloured by the plate of origin for each cell."}
+sub.sce <- sce.416b[,sce.416b$cluster %in% c("1", "2")]
+plotExpression(sub.sce, x="cluster", colour_by="Plate",
+    features=rownames(top)[1:10])
+```
+
+**Comments from Aaron:**
+
+- Note that the data dredging problem mentioned previously is an orthogonal issue to variance modelling.
+This will not be resolved by performing summation on data with empirically defined clusters.
+Of course, the summation approach can also be easily used with _a priori_ defined groups for which data dredging is not a problem.
+
+# References
