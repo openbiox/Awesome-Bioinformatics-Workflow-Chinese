@@ -2,6 +2,8 @@
 
 [Openbiox 翻译小组](https://github.com/openbiox/openbiox-Translation)发起并维护的优秀 Workflow 翻译项目
 
+更多信息欢迎查看[项目 wiki 页面](https://github.com/openbiox/Awesome-Bioinformatics-Workflow-Chinese/wiki)
+
 ## 第一期：Bioconductor workflow
 
 Bioconductor 是生物信息分析过程中绕不过的工具，同时也是我们入们和进阶生物信息极好的学习材料。因此我们将 Bioconductor workflow 的翻译作为 Awesome-Bioinformatics-Workflow-Chinese 的第一期开放项目，并在今后持续更新。
