@@ -1,0 +1,108 @@
+---
+title: "Using Bioconductor to detect differential binding in ChIP-seq data"
+author:
+- name: Aaron T. L. Lun
+  affiliation: 
+  - &WEHI The Walter and Eliza Hall Institute of Medical Research, 1G Royal Parade, Parkville, VIC 3052, Melbourne, Australia
+  - Department of Medical Biology, The University of Melbourne, Parkville, VIC 3010, Melbourne, Australia
+- name: Gordon K. Smyth
+  affiliation: 
+  - *WEHI 
+  - Department of Mathematics and Statistics, The University of Melbourne, Parkville, VIC 3010, Melbourne, Australia
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{1. Introduction}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}    
+output:
+  BiocStyle::html_document:
+    fig_caption: yes
+    toc_float: yes
+bibliography: ref.bib
+---
+
+<!--
+****
+-->
+
+```{r style, echo=FALSE, results='hide', message=FALSE}
+library(BiocStyle)
+library(knitr)
+opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+opts_chunk$set(fig.asp=1)
+```
+
+# Workflow version information
+
+**R version**: `r R.version.string`
+
+**Bioconductor version**: `r BiocManager::version()`
+  
+**Package**: `r packageVersion("chipseqDB")`
+
+
+# Introduction
+
+Chromatin immunoprecipitation with sequencing (ChIP-seq) is a widely used technique for identifying the genomic binding sites of a target protein.
+Conventional analyses of ChIP-seq data aim to detect absolute binding (i.e., the presence or absence of a binding site) based on peaks in the read coverage.
+An alternative analysis strategy is to detect of changes in the binding profile between conditions [@rossinnes2012differential; @pal2013global].
+These differential binding (DB) analyses involve counting reads into genomic intervals and testing those counts for significant differences between conditions.
+This defines a set of putative DB regions for further examination.
+DB analyses are statistically easier to perform than their conventional counterparts,
+as the effect of genomic biases is largely mitigated when counts for different libraries are compared at the same genomic region.
+DB regions may also be more relevant as the change in binding can be associated with the biological difference between conditions.
+
+The key step in the DB analysis is the manner in which reads are counted.
+The most obvious strategy is to count reads into pre-defined regions of interest, like promoters or gene bodies [@pal2013global].
+This is simple but will not capture changes outside of those regions.
+In contrast, *de novo* analyses do not depend on pre-specified regions, instead using empirically defined peaks or sliding windows for read counting.
+Peak-based methods are implemented in the `r Biocpkg("DiffBind")` and `r Biocpkg("DBChIP")` software packages [@rossinnes2012differential; @liang2012detecting],
+    which count reads into peak intervals that have been identified with software like MACS [@zhang2008macs].
+This requires some care to maintain statistical rigour as peaks are called with the same data used to test for DB.
+Alternatively, window-based approaches count reads into sliding windows across the genome.
+This is a more direct strategy that avoids problems with data re-use and can provide increased DB detection power [@lun2014denovo].
+However, its correct implementation is not straightforward due to the subtleties with interpretation of the false discovery rate (FDR).
+
+# Differential binding with sliding windows
+
+Here, we describe computational workflows for performing a DB analysis with sliding windows.
+It is primarily based on the `r Biocpkg("csaw")` software package but also uses a number of other packages from the open-source Bioconductor project [@huber2015orchestrating].
+The aim is to facilitate the practical implementation of window-based DB analyses by providing detailed code and expected output.
+We demonstrate on data from real studies examining changes in transcription factor binding [@kasper2014genomewide] and histone mark enrichment [@domingo2012bcell].
+
+The workflows described here apply to any ChIP-seq experiment with multiple experimental conditions and with multiple biological samples within one or more of the conditions.
+They detect and summarize DB regions between conditions in a *de novo* manner, i.e., without making any prior assumptions about the location or width of bound regions.
+Detected regions are then annotated according to their proximity to annotated genes.
+In addition, the code can be easily adapted to accommodate batch effects, covariates and multiple experimental factors.
+
+***Note:*** *to cite this article, please refer to https://f1000research.com/articles/4-1080/v2 for instructions.*
+
+# Obtaining BAM files
+
+All of the workflows described here start from sorted and indexed BAM files in the `r Biocpkg("chipseqDBData")` package.
+For application to user-specified data, the raw read sequences have to be aligned to the appropriate reference genome beforehand.
+Most aligners can be used for this purpose, but we have used `r Biocpkg("Rsubread")` [@liao2013subread] due to the convenience of its R interface.
+It is also recommended to mark duplicate reads using tools like `Picard` prior to starting the workflow.
+
+# Author information
+
+## Author contributions
+
+A.T.T.L. developed and tested the workflow on the H3K9ac and CBP data sets.
+G.K.S. provided direction on the design of the workflow.
+Both A.T.T.L. and G.K.S. wrote the article.
+
+## Competing interests
+
+No competing interests were disclosed.
+
+## Grant information
+
+National Health and Medical Research Council (Program Grant 1054618 to G.K.S., Fellowship to G.K.S.);
+Victorian State Government Operational Infrastructure Support; Australian Government NHMRC IRIIS.
+
+## Acknowledgements
+
+The authors would like to thank Prof. Stephen Nutt for his valuable insights on B-cell biology.
+
+# References

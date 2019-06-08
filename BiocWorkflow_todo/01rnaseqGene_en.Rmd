@@ -38,10 +38,10 @@
     <meta property="og:image" content="https://avatars3.githubusercontent.com/u/69203?s=400&amp;v=4" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="mikelove/rnaseqGene" /><meta property="og:url" content="https://github.com/mikelove/rnaseqGene" /><meta property="og:description" content="RNA-seq workflow: gene-level exploratory analysis and differential expression - mikelove/rnaseqGene" />
 
   <link rel="assets" href="https://github.githubassets.com/">
-  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6MzIyNTYzNTc4Ojg2YTE1NDE2YTNhODc2MDQ3MTk4NzNiNTM3MzQ5NTQ0MmE2ZTg1MjUwYzdmYjkwMmFkYmQxZjk4ODNhMDY2ZjY=--f4cd4949365a8166c14e62d69591d6d16fe4e3bf">
+  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6MzcyMTM0MDM5Ojg2NGUwYjA0ODkyZmVkMDQ5NmNhMTJkMmQzNWMwZTk3ZTVkNDFlYTA0MjUzZGJkMmJhN2ZmNDcxYmMzMGIyYjk=--e3cd537032a73d8d4f901d44a1e21f9cb76c5945">
   <meta name="pjax-timeout" content="1000">
   <link rel="sudo-modal" href="/sessions/sudo_modal">
-  <meta name="request-id" content="F7A3:8595:9A0C66:D43E1F:5CF9E912" data-pjax-transient>
+  <meta name="request-id" content="EC53:68F0:181409F:20F80CE:5CFB5468" data-pjax-transient>
 
 
   
@@ -52,7 +52,7 @@
     <meta name="google-site-verification" content="ZzhVyEFwb7w3e0-uOTltm8Jsck2F5StVihD0exw2fsA">
     <meta name="google-site-verification" content="GXs5KoUUkNCoaAZn7wPN-t01Pywp9M3sEjnt_3_ZWPc">
 
-  <meta name="octolytics-host" content="collector.githubapp.com" /><meta name="octolytics-app-id" content="github" /><meta name="octolytics-event-url" content="https://collector.githubapp.com/github-external/browser_event" /><meta name="octolytics-dimension-request_id" content="F7A3:8595:9A0C66:D43E1F:5CF9E912" /><meta name="octolytics-dimension-region_edge" content="sea" /><meta name="octolytics-dimension-region_render" content="iad" /><meta name="octolytics-actor-id" content="17489298" /><meta name="octolytics-actor-login" content="fei0810" /><meta name="octolytics-actor-hash" content="e12551ff36246853353b92b10c5f91d392e6f4611ee849ed9696aee654ba9650" />
+  <meta name="octolytics-host" content="collector.githubapp.com" /><meta name="octolytics-app-id" content="github" /><meta name="octolytics-event-url" content="https://collector.githubapp.com/github-external/browser_event" /><meta name="octolytics-dimension-request_id" content="EC53:68F0:181409F:20F80CE:5CFB5468" /><meta name="octolytics-dimension-region_edge" content="sea" /><meta name="octolytics-dimension-region_render" content="iad" /><meta name="octolytics-actor-id" content="17489298" /><meta name="octolytics-actor-login" content="fei0810" /><meta name="octolytics-actor-hash" content="e12551ff36246853353b92b10c5f91d392e6f4611ee849ed9696aee654ba9650" />
 <meta name="analytics-location" content="/&lt;user-name&gt;/&lt;repo-name&gt;/blob/show" data-pjax-transient="true" />
 
 
@@ -71,13 +71,13 @@
     <meta name="user-login" content="fei0810">
 
       <meta name="expected-hostname" content="github.com">
-    <meta name="js-proxy-site-detection-payload" content="MTI2MjEwNzJiNDc3ZGJmODZlNjM2NDcxN2VkNWUxMjMxYmIyMDc1ZmMyNmFlZTFlYmNiZWQzYWE4ODc1N2MxOHx7InJlbW90ZV9hZGRyZXNzIjoiNjUuNDkuNzEuMTEyIiwicmVxdWVzdF9pZCI6IkY3QTM6ODU5NTo5QTBDNjY6RDQzRTFGOjVDRjlFOTEyIiwidGltZXN0YW1wIjoxNTU5ODgyMDA5LCJob3N0IjoiZ2l0aHViLmNvbSJ9">
+    <meta name="js-proxy-site-detection-payload" content="Yzg3YjM1ZjJhNjIwNjRlZTU4NjQ1MzE3NzlkM2E2NjhkYjg5MDdlNjY0MjVlNGY1NTBhNDA3ZTVkMjdkMzdiZXx7InJlbW90ZV9hZGRyZXNzIjoiNjUuNDkuNzEuMTEyIiwicmVxdWVzdF9pZCI6IkVDNTM6NjhGMDoxODE0MDlGOjIwRjgwQ0U6NUNGQjU0NjgiLCJ0aW1lc3RhbXAiOjE1NTk5NzUwMzQsImhvc3QiOiJnaXRodWIuY29tIn0=">
 
     <meta name="enabled-features" content="UNIVERSE_BANNER,MARKETPLACE_INVOICED_BILLING,MARKETPLACE_SOCIAL_PROOF_CUSTOMERS,MARKETPLACE_TRENDING_SOCIAL_PROOF,MARKETPLACE_RECOMMENDATIONS,NOTIFY_ON_BLOCK,RELATED_ISSUES">
 
-  <meta name="html-safe-nonce" content="8fc99dff4a1b94de5f7a9fbbbe4a127c44be43f7">
+  <meta name="html-safe-nonce" content="66ceac2f73ae73707d41dfdc46a3663d10d71f4a">
 
-  <meta http-equiv="x-pjax-version" content="f71b7306eec9da32683a4fb4d99307b0">
+  <meta http-equiv="x-pjax-version" content="a4ec07076dcc2aec3fb6dbf0a15c362c">
   
 
       <link href="https://github.com/mikelove/rnaseqGene/commits/master.atom" rel="alternate" title="Recent Commits to rnaseqGene:master" type="application/atom+xml">
@@ -158,7 +158,7 @@
           aria-autocomplete="list"
           aria-controls="jump-to-results"
           aria-label="Search or jump to…"
-          data-jump-to-suggestions-path="/_graphql/GetSuggestedNavigationDestinations#csrf-token=azrbWAv8NQG29Z+EBu6Hk041wyiGaqB0QV4GeD5XkIpXb+yWSIYZ3VFHQCwusASddL3pRZgYnSiz5dfuCoolDw=="
+          data-jump-to-suggestions-path="/_graphql/GetSuggestedNavigationDestinations#csrf-token=8YOhNI6OUvRj4sQdrC8IqzdYP5KrZh6HU9NxvljBQ9mpfy3LSzt9laK6g7t2DQDcpgD+Pjwh8Sce5kAnXS2/pw=="
           spellcheck="false"
           autocomplete="off"
           >
@@ -308,7 +308,7 @@
       <img class="avatar" src="https://avatars0.githubusercontent.com/u/17489298?s=40&amp;v=4" width="20" height="20" alt="@fei0810" />
       fei0810
 </a>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="t7mwmWpz++5FGpON0w8JwDq/diWFnVSxyLXOY82GXCIap1BW3ZlmrNYYnrkXYaxhebFDDg205nhyrkGuQX8zWA==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Gny+C9f19cpp6zb7a7AFPGJ9T4WEZ0avRjhTX5xfZYyeII61aCxudtej64cBqDI0aBhp/2AF4/SMQOmS7haG6g==" />
       <button type="submit" class="Header-link mr-0 mr-lg-3 py-2 py-lg-0 border-top border-lg-top-0 border-white-fade-15 d-lg-none btn-link d-block width-full text-left" data-ga-click="Header, sign out, icon:logout" style="padding-left: 2px;">
         <svg class="octicon octicon-sign-out v-align-middle" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12 9V7H8V5h4V3l4 3-4 3zm-2 3H6V3L2 1h8v3h1V1c0-.55-.45-1-1-1H1C.45 0 0 .45 0 1v11.38c0 .39.22.73.55.91L6 16.01V13h4c.55 0 1-.45 1-1V8h-1v4z"/></svg>
         Sign out
@@ -334,8 +334,9 @@
 
     <div class="Header-item mr-0 mr-lg-3 flex-order-1 flex-lg-order-none">
       
-    <a aria-label="You have no unread notifications" class="Header-link notification-indicator position-relative tooltipped tooltipped-s js-socket-channel js-notification-indicator" data-hotkey="g n" data-ga-click="Header, go to notifications, icon:read" data-channel="notification-changed:17489298" href="/notifications">
-        <span class="mail-status "></span>
+
+    <a aria-label="You have unread notifications" class="Header-link notification-indicator position-relative tooltipped tooltipped-s js-socket-channel js-notification-indicator" data-hotkey="g n" data-ga-click="Header, go to notifications, icon:unread" data-channel="notification-changed:17489298" href="/notifications">
+        <span class="mail-status unread"></span>
         <svg class="octicon octicon-bell" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 12v1H0v-1l.73-.58c.77-.77.81-2.55 1.19-4.42C2.69 3.23 6 2 6 2c0-.55.45-1 1-1s1 .45 1 1c0 0 3.39 1.23 4.16 5 .38 1.88.42 3.66 1.19 4.42l.66.58H14zm-7 4c1.11 0 2-.89 2-2H5c0 1.11.89 2 2 2z"/></svg>
 </a>
     </div>
@@ -401,7 +402,7 @@
     border
   " data-team-hovercards-enabled>
   <details class="js-user-status-details details-reset details-overlay details-overlay-dark">
-    <summary class="btn-link btn-block link-gray no-underline js-toggle-user-status-edit toggle-user-status-edit " aria-haspopup="dialog" role="menuitem" data-hydro-click="{&quot;event_type&quot;:&quot;user_profile.click&quot;,&quot;payload&quot;:{&quot;profile_user_id&quot;:69203,&quot;target&quot;:&quot;EDIT_USER_STATUS&quot;,&quot;user_id&quot;:17489298,&quot;client_id&quot;:&quot;576199321.1513039387&quot;,&quot;originating_request_id&quot;:&quot;F7A3:8595:9A0C66:D43E1F:5CF9E912&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;}}" data-hydro-click-hmac="0196b0662f01d4a38c7075e0ca372b3a5d40656fb4e6cecbf28a7b0fc1bf46e3">
+    <summary class="btn-link btn-block link-gray no-underline js-toggle-user-status-edit toggle-user-status-edit " aria-haspopup="dialog" role="menuitem" data-hydro-click="{&quot;event_type&quot;:&quot;user_profile.click&quot;,&quot;payload&quot;:{&quot;profile_user_id&quot;:69203,&quot;target&quot;:&quot;EDIT_USER_STATUS&quot;,&quot;user_id&quot;:17489298,&quot;client_id&quot;:&quot;911087937.1510561911&quot;,&quot;originating_request_id&quot;:&quot;EC53:68F0:181409F:20F80CE:5CFB5468&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;}}" data-hydro-click-hmac="9bceef64ddde64643ce2f40b11423ec27260290b0030e1163421d43137425380">
       <div class="d-flex">
         <div class="f6 lh-condensed user-status-header
           d-inline-block v-align-middle
@@ -427,7 +428,7 @@
         </div>
       </div>
 </summary>    <details-dialog class="details-dialog rounded-1 anim-fade-in fast Box Box--overlay" role="dialog" tabindex="-1">
-      <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="position-relative flex-auto js-user-status-form" action="/users/status?compact=1&amp;link_mentions=0&amp;truncate=1" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="_method" value="put" /><input type="hidden" name="authenticity_token" value="PwVRpFa7x3d2hve2QXOBn0PR36g51fD1IjcN2bkt2nOpdQSioiaJEWPRz+VVawsgLMvkErME8QGLgqa9e4E2Kg==" />
+      <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="position-relative flex-auto js-user-status-form" action="/users/status?compact=1&amp;link_mentions=0&amp;truncate=1" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="_method" value="put" /><input type="hidden" name="authenticity_token" value="6cmIPiOmpBgQWSkkCtQyzZdW3RmaTDYu7oO5qrOK5FVRh+seAfjkjyfXdSPgundq5GsdJZMA2kJRkncQVnlpqw==" />
         <div class="Box-header bg-gray border-bottom p-3">
           <button class="Box-btn-octicon js-toggle-user-status-edit btn-octicon float-right" type="reset" aria-label="Close dialog" data-close-dialog>
             <svg class="octicon octicon-x" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"/></svg>
@@ -547,22 +548,22 @@
       </li>
       <li class="dropdown-divider" role="none"></li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 30 minutes" value="2019-06-07T13:03:29+08:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 30 minutes" value="2019-06-08T14:53:54+08:00">
             in 30 minutes
           </button>
         </li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 1 hour" value="2019-06-07T13:33:29+08:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 1 hour" value="2019-06-08T15:23:54+08:00">
             in 1 hour
           </button>
         </li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 4 hours" value="2019-06-07T16:33:29+08:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 4 hours" value="2019-06-08T18:23:54+08:00">
             in 4 hours
           </button>
         </li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="today" value="2019-06-07T23:59:59+08:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="today" value="2019-06-08T23:59:59+08:00">
             today
           </button>
         </li>
@@ -600,12 +601,12 @@
     <a role="menuitem" class="dropdown-item" href="/fei0810?tab=projects" data-ga-click="Header, go to projects, text:your projects">Your projects</a>
 
     <a role="menuitem" class="dropdown-item" href="/fei0810?tab=stars" data-ga-click="Header, go to starred repos, text:your stars">Your stars</a>
-      <a role="menuitem" class="dropdown-item" href="https://gist.github.com/" data-ga-click="Header, your gists, text:your gists">Your gists</a>
+      <a role="menuitem" class="dropdown-item" href="https://gist.github.com/mine" data-ga-click="Header, your gists, text:your gists">Your gists</a>
 
     <div role="none" class="dropdown-divider"></div>
     <a role="menuitem" class="dropdown-item" href="https://help.github.com" data-ga-click="Header, go to help, text:help">Help</a>
     <a role="menuitem" class="dropdown-item" href="/settings/profile" data-ga-click="Header, go to settings, icon:settings">Settings</a>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="UaHxzOf0ceo4xC1p59G49/1LIfrI16EqtwDk6azKnbX8vxEDUB7sqKvGIF0jvx1WvkUU0UD+E+MNG2skIDPyzw==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="fZGUUzCU9npCz4MlBktuGm+2wO/+knBUpX/YV21iMn75zaTtj01txvyHXllsU1kSZdPmlRrw1Q9vB2KaHyvRGA==" />
       
       <button type="submit" class="dropdown-item dropdown-signout" data-ga-click="Header, sign out, icon:logout" role="menuitem">
         Sign out
@@ -653,10 +654,10 @@
 
   <li>
     
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-remote="true" class="clearfix js-social-form js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Z6lu3axB2cx/yTjenpQj2l6Na+lyB4d5HWTmYU5dbi1cK/VL8+HwAY/aKA4LfMRNmdRPLJzVUmGy7u2DXrqssg==" />      <input type="hidden" name="repository_id" value="129785590">
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-remote="true" class="clearfix js-social-form js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Gyi1xNwed2Yo4QiIIesHeKQ8FOiZUVZvd0CcHcTGI3QR4AG0lksCQEAG2UrJg0YzaKvLKXMbGZ/ZuyHhe7o2nA==" />      <input type="hidden" name="repository_id" value="129785590">
 
       <details class="details-reset details-overlay select-menu float-left">
-        <summary class="select-menu-button float-left btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;WATCH_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;576199321.1513039387&quot;,&quot;originating_request_id&quot;:&quot;F7A3:8595:9A0C66:D43E1F:5CF9E912&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="3e0a96c7be1dc4adb621ff0bda0180ccbec50a001ea66e70d6cd644b5f18d751" data-ga-click="Repository, click Watch settings, action:blob#show">          <span data-menu-button>
+        <summary class="select-menu-button float-left btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;WATCH_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;911087937.1510561911&quot;,&quot;originating_request_id&quot;:&quot;EC53:68F0:181409F:20F80CE:5CFB5468&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="faa4a9343580752cf773a0168b5c917a3f522548070345e055ab32e604c5878e" data-ga-click="Repository, click Watch settings, action:blob#show">          <span data-menu-button>
               <svg class="octicon octicon-eye v-align-text-bottom" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.06 2C3 2 0 8 0 8s3 6 8.06 6C13 14 16 8 16 8s-3-6-7.94-6zM8 12c-2.2 0-4-1.78-4-4 0-2.2 1.8-4 4-4 2.22 0 4 1.8 4 4 0 2.22-1.78 4-4 4zm2-4c0 1.11-.89 2-2 2-1.11 0-2-.89-2-2 0-1.11.89-2 2-2 1.11 0 2 .89 2 2z"/></svg>
               Watch
           </span>
@@ -727,18 +728,18 @@
 
   <li>
       <div class="js-toggler-container js-social-container starring-container ">
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="starred js-social-form" action="/mikelove/rnaseqGene/unstar" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="iGu0F7Xy1mLn4tMG+DwTAiW1Mn+nSmHOnGiKfGCcDZv6es+QgQl8I4YI1OCJaq/ScfAb0snrC0qQD0wbn9i6Lw==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="starred js-social-form" action="/mikelove/rnaseqGene/unstar" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="J21Y2f7IoiWFShtQdmItoAM/6Kt+ZwGmyXW/krFvUlm7ur2L61AmH3fOSAmia9gjw+6oYFsEEuC8mSrdyDXmfQ==" />
       <input type="hidden" name="context" value="repository"></input>
-      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Unstar mikelove/rnaseqGene" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;UNSTAR_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;576199321.1513039387&quot;,&quot;originating_request_id&quot;:&quot;F7A3:8595:9A0C66:D43E1F:5CF9E912&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="5b1fd29fe192985eae61673a55aa36527356ea679839318634678ef1f10e360c" data-ga-click="Repository, click unstar button, action:blob#show; text:Unstar">        <svg class="octicon octicon-star v-align-text-bottom" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"/></svg>
+      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Unstar mikelove/rnaseqGene" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;UNSTAR_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;911087937.1510561911&quot;,&quot;originating_request_id&quot;:&quot;EC53:68F0:181409F:20F80CE:5CFB5468&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="4143f49de46244a06a40d04fc33b8d0545cc84179289469b9dc128be9ea6fa04" data-ga-click="Repository, click unstar button, action:blob#show; text:Unstar">        <svg class="octicon octicon-star v-align-text-bottom" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"/></svg>
         Unstar
 </button>        <a class="social-count js-social-count" href="/mikelove/rnaseqGene/stargazers"
            aria-label="20 users starred this repository">
           20
         </a>
 </form>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="unstarred js-social-form" action="/mikelove/rnaseqGene/star" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="bGBHawFpxsf8AfnR4Ul8TqGFCqgOMLV1eeT54Ale/0yuCnZ68QroRl1Z/HZGPT3IytqJ25uTEtK832OReEM6yw==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="unstarred js-social-form" action="/mikelove/rnaseqGene/star" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="3aCbYCyHoEfCqC549LpdXE3hqUqk6XBnksCh7tnRBcN7QSFUYCce/uWsDOqURZ2usQQRV0Jalk3oPcGVbtytFQ==" />
       <input type="hidden" name="context" value="repository"></input>
-      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star mikelove/rnaseqGene" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;576199321.1513039387&quot;,&quot;originating_request_id&quot;:&quot;F7A3:8595:9A0C66:D43E1F:5CF9E912&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="da0f02f2dc67f19f07d031d75340cadfdf63cce5e2d5864e2e2251402d999a56" data-ga-click="Repository, click star button, action:blob#show; text:Star">        <svg class="octicon octicon-star v-align-text-bottom" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"/></svg>
+      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star mikelove/rnaseqGene" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;911087937.1510561911&quot;,&quot;originating_request_id&quot;:&quot;EC53:68F0:181409F:20F80CE:5CFB5468&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="8838b16f12a0fceab4c0439db558173d4c85e1668ad6fe6c1fa12ec7bab502b1" data-ga-click="Repository, click star button, action:blob#show; text:Star">        <svg class="octicon octicon-star v-align-text-bottom" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"/></svg>
         Star
 </button>        <a class="social-count js-social-count" href="/mikelove/rnaseqGene/stargazers"
            aria-label="20 users starred this repository">
@@ -750,7 +751,7 @@
 
   <li>
           <details class="details-reset details-overlay details-overlay-dark d-inline-block float-left">
-            <summary class="btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;FORK_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;576199321.1513039387&quot;,&quot;originating_request_id&quot;:&quot;F7A3:8595:9A0C66:D43E1F:5CF9E912&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="72ac71822641f6a3a55c9cff8807f679459d3ec04e23f0e7bd334ff10bca5946" data-ga-click="Repository, show fork modal, action:blob#show; text:Fork" title="Fork your own copy of mikelove/rnaseqGene to your account">              <svg class="octicon octicon-repo-forked v-align-text-bottom" viewBox="0 0 10 16" version="1.1" width="10" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a1.993 1.993 0 0 0-1 3.72V6L5 8 3 6V4.72A1.993 1.993 0 0 0 2 1a1.993 1.993 0 0 0-1 3.72V6.5l3 3v1.78A1.993 1.993 0 0 0 5 15a1.993 1.993 0 0 0 1-3.72V9.5l3-3V4.72A1.993 1.993 0 0 0 8 1zM2 4.2C1.34 4.2.8 3.65.8 3c0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3 10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3-10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2z"/></svg>
+            <summary class="btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;FORK_BUTTON&quot;,&quot;repository_id&quot;:129785590,&quot;client_id&quot;:&quot;911087937.1510561911&quot;,&quot;originating_request_id&quot;:&quot;EC53:68F0:181409F:20F80CE:5CFB5468&quot;,&quot;originating_url&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;referrer&quot;:&quot;https://github.com/mikelove/rnaseqGene/blob/master/vignettes/rnaseqGene.Rmd&quot;,&quot;user_id&quot;:17489298}}" data-hydro-click-hmac="6f413246edc1545b6958387a3fe3b547e6c7bd1d723b1cf0eeb4dd888eb2f245" data-ga-click="Repository, show fork modal, action:blob#show; text:Fork" title="Fork your own copy of mikelove/rnaseqGene to your account">              <svg class="octicon octicon-repo-forked v-align-text-bottom" viewBox="0 0 10 16" version="1.1" width="10" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a1.993 1.993 0 0 0-1 3.72V6L5 8 3 6V4.72A1.993 1.993 0 0 0 2 1a1.993 1.993 0 0 0-1 3.72V6.5l3 3v1.78A1.993 1.993 0 0 0 5 15a1.993 1.993 0 0 0 1-3.72V9.5l3-3V4.72A1.993 1.993 0 0 0 8 1zM2 4.2C1.34 4.2.8 3.65.8 3c0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3 10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3-10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2z"/></svg>
               Fork
 </summary>            <details-dialog
               class="anim-fade-in fast Box Box--overlay d-flex flex-column"
@@ -1042,13 +1043,13 @@
                 <svg class="octicon octicon-device-desktop" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M15 2H1c-.55 0-1 .45-1 1v9c0 .55.45 1 1 1h5.34c-.25.61-.86 1.39-2.34 2h8c-1.48-.61-2.09-1.39-2.34-2H15c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm0 9H1V3h14v8z"/></svg>
             </a>
 
-            <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/mikelove/rnaseqGene/edit/master/vignettes/rnaseqGene.Rmd" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Us0VV9rvLzhX4sEWyYrVvuW2aY35qiir45hZGuaD8JYga5koSbY4CK4UvCG3/005mlPNewR7dBwseWQSe9i+eQ==" />
+            <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/mikelove/rnaseqGene/edit/master/vignettes/rnaseqGene.Rmd" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="vMbi7BzM8xoerRVUP1Icbdqh1UiohweRrEvFAmIRCUEE9+I0k2XAlRKa1XE3T5ZUVSBF6xGfVkf9Dbks7QpLgQ==" />
               <button class="btn-octicon tooltipped tooltipped-nw" type="submit"
                 aria-label="Fork this project and edit the file" data-hotkey="e" data-disable-with>
                 <svg class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 0 1 1.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"/></svg>
               </button>
 </form>
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/mikelove/rnaseqGene/delete/master/vignettes/rnaseqGene.Rmd" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="deBBBRiR6vjyvmiI5uVOhq3w6ooV6Wml+pO1BaQacHJvB+tWU7YByxG0rpxZDi0PU5Kg9mHPRQ3nWoOM7yfPvQ==" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/mikelove/rnaseqGene/delete/master/vignettes/rnaseqGene.Rmd" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Qx+iXWok5vfWx5267clx2Dmkio8B2vyag/QhbwexFhuKCMjjVdhNrzVducDwSqf8XOvMv9Jb/MwdITfdoPACRw==" />
             <button class="btn-octicon btn-octicon-danger tooltipped tooltipped-nw" type="submit"
               aria-label="Fork this project and delete the file" data-disable-with>
               <svg class="octicon octicon-trashcan" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11 2H9c0-.55-.45-1-1-1H5c-.55 0-1 .45-1 1H2c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1v9c0 .55.45 1 1 1h7c.55 0 1-.45 1-1V5c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm-1 12H3V5h1v8h1V5h1v8h1V5h1v8h1V5h1v9zm1-10H2V3h9v1z"/></svg>
@@ -9272,7 +9273,7 @@
 <div class="footer container-lg width-full p-responsive" role="contentinfo">
   <div class="position-relative d-flex flex-row-reverse flex-lg-row flex-wrap flex-lg-nowrap flex-justify-center flex-lg-justify-between pt-6 pb-2 mt-6 f6 text-gray border-top border-gray-light ">
     <ul class="list-style-none d-flex flex-wrap col-12 col-lg-5 flex-justify-center flex-lg-justify-between mb-2 mb-lg-0">
-      <li class="mr-3 mr-lg-0">&copy; 2019 <span title="0.51080s from unicorn-69cc865d8f-t6h6t">GitHub</span>, Inc.</li>
+      <li class="mr-3 mr-lg-0">&copy; 2019 <span title="0.53500s from unicorn-59fc849cdd-pbd2c">GitHub</span>, Inc.</li>
         <li class="mr-3 mr-lg-0"><a data-ga-click="Footer, go to terms, text:terms" href="https://github.com/site/terms">Terms</a></li>
         <li class="mr-3 mr-lg-0"><a data-ga-click="Footer, go to privacy, text:privacy" href="https://github.com/site/privacy">Privacy</a></li>
         <li class="mr-3 mr-lg-0"><a data-ga-click="Footer, go to security, text:security" href="https://github.com/security">Security</a></li>
@@ -9310,9 +9311,9 @@
 
 
     
-    <script crossorigin="anonymous" integrity="sha512-E0kyAkQpX7xPQNWfQdhGhIwtiOr/ruPB3GeOjDy2UctSQ/n9a1l+ek/EnlgMSZucWIV3R0saqwvx1h4F4j0NVg==" type="application/javascript" src="https://github.githubassets.com/assets/frameworks-91316555.js"></script>
+    <script crossorigin="anonymous" integrity="sha512-4D7Df3f6tUQVsNwSbo1CVWjxUiIq07cMaWVIO2M0aYkbh9093/yzfdK0DaIfxEALJKLROLlAsYjwOjBldHEY2Q==" type="application/javascript" src="https://github.githubassets.com/assets/frameworks-877255c7.js"></script>
     
-    <script crossorigin="anonymous" async="async" integrity="sha512-TWKjtT83ffiMVpw3N5QD2Yco30TN4cekJy0Yziau/N/e2ckJowiHBoXiMpL3o5LjS+jA8kTIBhwCiK6g8zjGag==" type="application/javascript" src="https://github.githubassets.com/assets/github-bootstrap-528e24b3.js"></script>
+    <script crossorigin="anonymous" async="async" integrity="sha512-+9q+1bvQexH3m22/KCwX3zeJkYE0FQu081kpS4TQd+tY2az3nt/8d2jfx4ysqJg0za15PSM9qho9/sjPsnUgAA==" type="application/javascript" src="https://github.githubassets.com/assets/github-bootstrap-17d10582.js"></script>
     
     
     
