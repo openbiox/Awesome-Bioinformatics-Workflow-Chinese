@@ -24,3 +24,7 @@ Bioconductor workflow 官方网址：https://bioconductor.org/packages/3.9/workf
 8. [chipseqDB：A Bioconductor Workflow to Detect Differential Binding in ChIP-seq Data](https://www.bioconductor.org/packages/chipseqDB/) (R package version 1.8.0)
 9. [maEndToEnd：An end to end workflow for differential gene expression using Affymetrix microarrays](https://www.bioconductor.org/packages/maEndToEnd/) (R package version 2.4.0)
 10. [RnaSeqGeneEdgeRQL：Gene-level RNA-seq differential expression and pathway analysis using Rsubread and the edgeR quasi-likelihood pipeline](https://www.bioconductor.org/packages/RnaSeqGeneEdgeRQL/) (R package version 1.8.0)
+
+## 项目成员
+
+[@郑东旭](https://github.com/dongxuzheng); [@赵飞](https://github.com/fei0810)
