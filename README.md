@@ -1,6 +1,6 @@
 # Awesome-Bioinformatics-Workflow-Chinese
 
-Openbiox 翻译小组发起并维护的优秀 Workflow 翻译项目
+[Openbiox 翻译小组](https://github.com/openbiox/openbiox-Translation)发起并维护的优秀 Workflow 翻译项目
 
 ## 第一期：Bioconductor workflow
 
