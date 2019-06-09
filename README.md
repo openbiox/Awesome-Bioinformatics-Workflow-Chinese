@@ -14,7 +14,7 @@
 
 Bioconductor 是生物信息分析过程中绕不过的工具，同时也是我们入们和进阶生物信息极好的学习材料。因此我们将 Bioconductor workflow 的翻译作为 Awesome-Bioinformatics-Workflow-Chinese 的第一期开放项目，并在今后持续更新。
 
-Bioconductor workflow 官方网址：https://bioconductor.org/packages/3.9/workflows/
+Bioconductor workflow 官方网址：https://bioconductor.org/packages/3.9/workflows/ (本次翻译针对 Bioconductor 3.9 版本)
 
 根据下载次数，文档质量更新时间和涉及领域等，本次开放 10 个作为第一批认领内容。分别是：
 
