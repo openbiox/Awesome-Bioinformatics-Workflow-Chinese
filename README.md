@@ -32,3 +32,17 @@ Bioconductor workflow 官方网址：https://bioconductor.org/packages/3.9/workf
 ## 项目成员
 
 [@郑东旭](https://github.com/dongxuzheng); [@赵飞](https://github.com/fei0810)
+
+## 版权声明
+
+openbiox 翻译计划的所有译文仅用于学习交流。版权归原文作者、中文译者和 openbiox 翻译计划所有，欢迎分享和非商业转载。转载前请自觉联系翻译项目负责人或译者获取授权。
+
+## 转载要求
+
+通过任何渠道以任何形式转载 openbiox 翻译计划相关文章时，请在文章开头明显位置声明原文出处、译者校对者和 openbiox 翻译计划官方链接，违者必究。转载声明示例如下：
+
+> 本文出自[openbiox 翻译计划](https://github.com/openbiox/openbiox-Translation)
+>
+> 原文：此处为原文链接
+>
+> 译者：此处为译者姓名(链接)；校对：此处为校对姓名(链接)
