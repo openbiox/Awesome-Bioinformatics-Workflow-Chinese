@@ -31,7 +31,12 @@ Bioconductor workflow 官方网址：https://bioconductor.org/packages/3.9/workf
 
 ## 项目成员
 
-[@郑东旭](https://github.com/dongxuzheng); [@赵飞](https://github.com/fei0810)
+发起人：[@郑东旭](https://github.com/dongxuzheng)
+
+负责人： [@赵飞](https://github.com/fei0810)
+
+参与人：[@闫超](https://github.com/YanNianqun) [@陈晓宇](http://github.com/Zulity) [@胡海飞](https://github.com/lakeseafly) [@李欣](https://github.com/lixin856) [@李新强](https://github.com/restore1997) [@刘潜](https://github.com/qliugithub) [@彭丹丹](https://github.com/dandanpeng) [@王潇](https://github.com/imxiaow) [@吴亮](https://github.com/asdwl) [@谢程舒](https://github.com/Chengshu21) [@叶璇](https://github.com/xxy103) [@郑东旭](https://github.com/dongxuzheng) [@赵飞](https://github.com/fei0810)
+
 
 ## 版权声明
 
