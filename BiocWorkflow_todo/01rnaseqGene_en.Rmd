@@ -1,5 +1,5 @@
 ---
-title: "RNA-seq workflow: gene-level exploratory analysis and differential expression"
+title: "RNA-seq 工作流程: 基因水平的探索性分析和差异表达分析"
 author:
 - name: Michael I. Love
   affiliation: 
@@ -17,9 +17,8 @@ bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{RNA-seq workflow at the gene level}
   %\VignetteEngine{knitr::rmarkdown}
-摘要：
-  这里我们使用 Bioconductor 包执行一个端到端的基因水平 RNA-seq 差异表达分析流程。我们将
-   FASTQ 文件开始，展示其如何与参考基因组比对，如何准备每个样本中每个基因的 RNA-seq 片段的计数矩阵。我们会进行探索性数据分析（EDA）以完成质量评估，并且为了探索样本之间的关系，执行差异基因表达分析，最后对结果进行可视化。
+abstract: |
+ 这里我们使用 Bioconductor 包执行一个端到端的基因水平 RNA-seq 差异表达分析流程。我们将从FASTQ     文件开始，展示其如何与参考基因组比对，如何准备每个样本中每个基因的 RNA-seq 片段的计数矩阵。我们会进行探索性数据分析（EDA）以完成质量评估，并且为了探索样本之间的关系，执行差异基因表达分析，最后对结果进行可视化。
 
 ---
 
