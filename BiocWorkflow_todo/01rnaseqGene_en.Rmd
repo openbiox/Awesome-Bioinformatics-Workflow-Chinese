@@ -17,14 +17,9 @@ bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{RNA-seq workflow at the gene level}
   %\VignetteEngine{knitr::rmarkdown}
-abstract: |
-  Here we walk through an end-to-end gene-level RNA-seq differential expression
-  workflow using Bioconductor packages.  We will start from the FASTQ files,
-  show how these were aligned to the reference genome, and prepare a count
-  matrix which tallies the number of RNA-seq reads/fragments within each gene
-  for each sample.  We will perform exploratory data analysis (EDA) for quality
-  assessment and to explore the relationship between samples, perform
-  differential gene expression analysis, and visually explore the results.
+摘要：
+  这里我们使用 Bioconductor 包执行一个端到端的基因水平 RNA-seq 差异表达分析流程。我们将
+   FASTQ 文件开始，展示其如何与参考基因组比对，如何准备每个样本中每个基因的 RNA-seq 片段的计数矩阵。我们会进行探索性数据分析（EDA）以完成质量评估，并且为了探索样本之间的关系，执行差异基因表达分析，最后对结果进行可视化。
 
 ---
 
@@ -52,157 +47,110 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE,
 **Package**: `r packageVersion("rnaseqGene")`
 
 
-# Introduction
+# 介绍
 
-Bioconductor has many packages which support analysis of
-high-throughput sequence 
-data, including RNA sequencing (RNA-seq). The packages which we
-will use in this workflow include core packages maintained by the
-Bioconductor core team for importing and processing raw sequencing
-data and loading gene annotations. We will also use
-contributed packages for statistical analysis and visualization
-of sequencing data. Through scheduled releases every 6 months, the
-Bioconductor project ensures that all the packages within a release
-will work together in harmony (hence the "conductor" metaphor).
-The packages used in this workflow are loaded with the
-*library* function and can be installed by following the
-[Bioconductor package installation instructions](http://bioconductor.org/install/#install-bioconductor-packages).
+Bioconductor 有许多用于分析高通量测序数据的包, 如 RNA（RNA-seq）测序等。
+我们在这个工作流中使用的包包括由 Bioconductor 核心团队维护的核心包，用来导入
+和处理原始的序列数据并加载基因注释。我们也会用其他的包进行统计分析和数据可视化。
+通过每6个月一次的发布计划，bioconductor 项目可以确保所有发布的包在整体上运行流畅。
+（这也是 “conductor” 一词的隐喻）。本工作流程中使用的包用
+*library* 函数加载，并可以通过以下链接安装
+[Bioconductor 包安装说明](http://bioconductor.org/install/#install-bioconductor-packages)。
 
-A published (but essentially similar) version of this workflow, including reviewer reports and comments
-is available at [F1000Research](http://f1000research.com/articles/4-1070).
+此工作流程的已发布（但基本相似）版本，包含有审阅报告和评论见
+[F1000Research](http://f1000research.com/articles/4-1070)。
 
-If you have questions about this workflow or any Bioconductor
-software, please post these to the
-[Bioconductor support site](https://support.bioconductor.org/).
-If the questions concern a specific package, you can tag the post with
-the name of the package, or for general questions about the workflow,
-tag the post with `rnaseqgene`. Note the
-[posting guide](http://www.bioconductor.org/help/support/posting-guide/)
-for crafting an optimal question for the support site.
+如果您对此工作流程或 Bioconductor 软件有任何疑问，请将这些发布到
+[Bioconductor 维护站点](https://support.bioconductor.org/)。
+如果你的问题涉及特定的包，你可以在发布中加上包的名字作为标签, 如果是关于工作流的一般性问题,
+在发布中加上标签 `rnaseqgene`。请参考
+[发布指南](http://www.bioconductor.org/help/support/posting-guide/)
+以使你在网站中发布的问题合乎规范。
 
-## Experimental data
+## 实验数据
 
-The data used in this workflow is stored in the
-`r Biocexptpkg("airway")` package that summarizes an RNA-seq experiment
-wherein airway smooth muscle cells were treated with dexamethasone, a
-synthetic glucocorticoid steroid with anti-inflammatory effects
-[@Himes2014RNASeq].  Glucocorticoids are used, for example, 
-by people with asthma to reduce inflammation of the airways. In the experiment,
-four primary human airway smooth muscle cell lines were treated with 1
-micromolar dexamethasone for 18 hours. For each of the four cell
-lines, we have a treated and an untreated sample. For more description
-of the experiment see the
-[PubMed entry 24926665](http://www.ncbi.nlm.nih.gov/pubmed/24926665)
-and for raw data see the
-[GEO entry GSE52778](http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778).
+本流程使用了存储在 `r Biocexptpkg("airway")` 包中的数据，该数据来源于一个用地塞米松
+（一种有抗炎作用的合成类糖皮质激素）处理呼吸道平滑肌细胞的 RNA-seq 实验
+[@Himes2014RNASeq]。糖皮质激素用于，诸如，减少哮喘病人的呼吸道炎症。实验中，
+四个原代的人呼吸道平滑肌细胞系用 1μmol 地塞米松处理 18 小时，每个细胞系都有一个处理的样本
+和未处理的对照样本。关于该实验的更多内容参见
+[PubMed entry 24926665](http://www.ncbi.nlm.nih.gov/pubmed/24926665)，
+该实验的原始数据参见
+[GEO entry GSE52778](http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)。
 
 <a id="count"></a>
 
-# Preparing count matrices
+# 准备计数矩阵
 
-As input, the count-based statistical methods, such as
+那些基于计数的统计方法，例如
 `r Biocpkg("DESeq2")` [@Love2014Moderated],
 `r Biocpkg("edgeR")` [@Robinson2009EdgeR],
 `r Biocpkg("limma")` with the voom method [@Law2014Voom],
 `r Biocpkg("DSS")` [@Wu2013New], 
 `r Biocpkg("EBSeq")` [@Leng2013EBSeq] and
 `r Biocpkg("baySeq")` [@Hardcastle2010BaySeq],
-expect input data as obtained, e.g., from RNA-seq or another
-high-throughput sequencing experiment, in the form of a matrix of
-integer values.  The value in the *i*-th row and the *j*-th column of
-the matrix tells how many reads (or fragments, for paired-end RNA-seq)
-have been assigned to gene *i* in sample *j*.  Analogously, for other
-types of assays, the rows of the matrix might correspond e.g., to
-binding regions (with ChIP-Seq), species of bacteria (with metagenomic
-datasets), or peptide sequences (with quantitative mass spectrometry).
+期望的输入数据是从 RNA-seq 等高通量测序实验中获得的，一个整数格式的矩阵。
+矩阵中 *i* 行和 *j* 列的值表示样本 *j* 中的基因 *i* 有多少 reads（对于双端测序来说，
+是 fragments）。类似的，对于其他类型的实验， 矩阵的行可以对应于诸如：结合位点（ChIP-Seq），
+细菌种类（宏基因组数据集）或蛋白序列（定量质谱）。
 
-The values in the matrix should be counts of sequencing
-reads/fragments. This is important for *DESeq2*'s statistical model to
-hold, as only counts allow assessing the measurement precision
-correctly. It is important to *never* provide counts that were
-pre-normalized for sequencing depth/library size, as the statistical
-model is most powerful when applied to un-normalized counts, and is
-designed to account for library size differences internally.
+矩阵中的值必须是测序片段的原始计数，这一点对于保证 *DESeq2* 统计模型的正常
+运行十分重要，因为只有原始计数才能正确的评估测量的精确度。因此，绝对不要使用
+对测序深度或文库大小进行了预标准化的计数值，因为统计模型使用未标准化的计数时
+效果最好，并且 *DESeq2* 的内部设计中已经考虑到了文库大小的差异。
 
-## Recommended: transcript abundances and the *tximport* pipeline
+## 推荐: 转录本丰度和 *tximport* 流程
 
-Before we demonstrate how to align and then count RNA-seq fragments, 
-we mention that a newer and faster alternative pipeline is to use 
-transcript abundance quantification methods such as 
-[Salmon](https://combine-lab.github.io/salmon/) [@Patro2017Salmon],
-[Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/) [@Patro2014Sailfish],
-[kallisto](https://pachterlab.github.io/kallisto/) [@Bray2016Near], or 
-[RSEM](http://deweylab.github.io/RSEM/) [@Li2011RSEM],
-to estimate abundances without aligning reads, followed by the
-`r Biocpkg("tximport")` package for assembling estimated count and
-offset matrices for use with Bioconductor differential gene expression
-packages. 
+在演示如何比对并计数 RNA-seq 片段之前，我们推荐一种更新更快的用于转录本丰度
+定量的可选流程，诸如：
+[Salmon](https://combine-lab.github.io/salmon/) [@Patro2017Salmon]，
+[Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/) [@Patro2014Sailfish]，
+[kallisto](https://pachterlab.github.io/kallisto/) [@Bray2016Near]，或者
+[RSEM](http://deweylab.github.io/RSEM/) [@Li2011RSEM]，
+它们可以在没有比对 reads 的情况下估算转录丰度，接着用 `r Biocpkg("tximport")` 包来组装
+估算的计数并为 Bioconductor 差异基因表达包提供使用的矩阵。 
 
-A tutorial on how to use the *Salmon* software for quantifying
-transcript abundance can be
-found [here](https://combine-lab.github.io/salmon/getting_started/).
-We recommend using the `--gcBias` 
+这是一个关于如何使用 *Salmon* 软件来定量转录本丰度的教程
+[（点击此处）](https://combine-lab.github.io/salmon/getting_started/).
+我们建议使用 `--gcBias` 
 [flag](http://salmon.readthedocs.io/en/latest/salmon.html#gcbias)
-which estimates a correction factor for systematic biases
-commonly present in RNA-seq data [@Love2016Modeling; @Patro2017Salmon], 
-unless you are certain that your data do not contain such bias.
-Following the Salmon tutorial, you can use the steps in the 
-[tximport vignette](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html),
-which will show how to build a *DESeqDataSet*. This is our current recommended
-pipeline for users, but below we still include steps on aligning reads to the
-genome and building count matrices from BAM files.
+为 RNA-seq 数据中常见的系统偏差估算一个校正因子
+[@Love2016Modeling; @Patro2017Salmon]，
+除非你确信你的数据没有这样的偏差。
+按照 Salmon 教程，你可以根据
+[tximport 指南](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html)，
+中的步骤，来学习如何建立一个 *DESeqDataSet*。这是我们目前推荐用户使用的流程，
+但是下面我们仍然会介绍关于基因组 reads 比对和从 BAM 文件中建立计数矩阵的步骤。
 
-The advantages of using the transcript abundance quantifiers in
-conjunction with *tximport* to produce gene-level count matrices and
-normalizing offsets, are: this approach corrects for any potential
-changes in gene length across samples (e.g. from differential isoform
-usage) [@Trapnell2013Differential]; some of these methods are
-substantially faster and require less memory and disk usage compared
-to alignment-based methods; and it is possible to avoid discarding
-those fragments that can align to multiple genes with homologous
-sequence [@Robert2015Errors].  Note that transcript abundance
-quantifiers skip the generation of large files which store read
-alignments, instead producing smaller files which store estimated
-abundances, counts, and effective lengths per transcript.  For more
-details, see the manuscript describing this approach
-[@Soneson2015Differential], and the `r Biocpkg("tximport")` package
-vignette for software details. The entry point back into this workflow
-after using a transcript quantifier and *tximport* would be the
-[section on exploratory data analysis](#eda) below.
+协同使用转录本丰度量化软件和 *tximport* 来产生基因水平的计数矩阵和标准化补偿的优势在于：
+这种方法校正了不同样本间基因长度的潜在改变 (如差异异构体造成的改变）
+[@Trapnell2013Differential]；与基于比对的方法相比，这些方法中的其中一些
+速度更快，所需的内存和磁盘使用量更少，并且可以不用舍弃那些可以与同源序列的多个基因比对上
+的片段[@Robert2015Errors]。注意，转录本丰度量化软件不产生存储 read aligments 的
+大文件，而是产生存储着估算丰度，计数值以及每个转录本有效长度的小文件。更多细节请参考相关
+的手册[@Soneson2015Differential]，以及概括了软件细节的 
+`r Biocpkg("tximport")` 包。使用了转录本量化软件和 *tximport* 后回到此工作流的
+切入点在 [探索性数据分析章节](#eda) 下面。
 
-## Aligning reads to a reference genome
+## 将 reads 比对到参考基因组上
 
-The computational analysis of an RNA-seq experiment begins from the FASTQ files that
-contain the nucleotide sequence of each read and a quality score at
-each position.  These reads must first be aligned to a reference
-genome or transcriptome, or the abundances and estimated counts per
-transcript can be estimated without alignment, as described above.
-In either case, it is important to know if the sequencing
-experiment was single-end or paired-end, as the alignment software
-will require the user to specify both FASTQ files for a paired-end
-experiment. The output of this alignment step is commonly stored in a
-file format called [SAM/BAM](http://samtools.github.io/hts-specs).
+RNA-seq 实验的计算分析从 FASTQ 文件开始，该文件含有每个 read 的核苷酸序列和每个
+位点的质量分数。这些 reads 首先与参考基因组或转录组进行比对，或者像上面描述的那样，
+在未比对的情况下估算转录本的丰度和计数值。不管哪种情况，一定要知道这个测序实验是单端
+的还是双端的，因为比对软件会要求用户为双端实验指定两个 FASTQ 文件。此比对步骤的结果
+通常会存储在一个[SAM/BAM](http://samtools.github.io/hts-specs)格式的文件。
 
-A number of software programs exist to align reads to a reference
-genome, and we encourage you to check out some of the benchmarking papers that
-discuss the advantages and disadvantages of each software, which
-include accuracy, sensitivity in aligning reads over splice junctions, speed,
-memory required, usability, and many other features.
-Here, we used the
-[STAR read aligner](https://code.google.com/p/rna-star/) [@Dobin2013STAR]
-to align the reads for our current experiment to the Ensembl
-release 75 [@Flicek2014Ensembl] human reference genome. In the following code example, it is assumed that there is a file in the current
-directory called `files` with each line containing an identifier for
-each experiment, and we have all the FASTQ files in a subdirectory
-`fastq`. If you have downloaded the FASTQ files from the
-Sequence Read Archive, the identifiers would be SRA run IDs,
-e.g. `SRR1039520`. You should have two files for a paired-end
-experiment for each ID, `fastq/SRR1039520_1.fastq1` and
-`fastq/SRR1039520_2.fastq`, which give the first and second read for
-the paired-end fragments. If you have performed a single-end
-experiment, you would only have one file per ID.
-We have also created a subdirectory, `aligned`,
-where STAR will output its alignment files. 
+许多的软件都能用于和参考基因组的 reads 比对，我们建议你查阅相关文献，以了解不同软件
+的优缺点，比如精度，拼接点处的比对灵敏度，速度，内存需求，实用性等等。
+我们在这里使用
+[STAR read aligner](https://code.google.com/p/rna-star/) [@Dobin2013STAR] 
+来将我们当前实验的 reads 和 Ensemblrelease 75 [@Flicek2014Ensembl] 人类参考基
+因组进行比对。
+在下面的示例代码中，假设当前目录中有一个名为 `files` 的文件，文件的每一行包含一个实验
+的标识符，所有的FASTQ文件在二级目录 `fastq` 中。如果你已经从 SRA 数据库（Sequence 
+Read Archive）下载了FASTQ文件，
+那么标识符就是 SRA 的 run ID，比如 `SRR1039520`。双端实验的每个ID有两个文件，`fastq/SRR1039520_1.fastq1` 和 `fastq/SRR1039520_2.fastq`，分别表示双端片段的第一个
+和第二个 read 。如果你做的是单端实验，那么每个 ID 只有一个文件。我们建立一个二级目录 `aligned`，用于存储 STAR 的输出的比对文件。
 
 ```
 for f in `cat files`; do STAR --genomeDir ../STAR/ENSEMBL.homo_sapiens.release-75 \
@@ -211,59 +159,47 @@ for f in `cat files`; do STAR --genomeDir ../STAR/ENSEMBL.homo_sapiens.release-7
 ```
 
 [SAMtools](http://www.htslib.org/doc/samtools.html) [@Li2009Sequence]
-was used to generate BAM files. The `-@` flag can be used to allocate
-additional threads.
+用于产生 BAM 文件。`-@` 标记用于分配额外的线程。
 
 ```
 for f in `cat files`; do samtools view -bS aligned/$f.Aligned.out.sam \
 -o aligned/$f.bam; done
 ```
+BAM 文件可以用于生成计数矩阵，这会在下面的章节中进行描述。
 
-The BAM files for a number of sequencing runs can then be used to
-generate count matrices, as described in the following section.
+## 定位比对文件
 
-## Locating alignment files
+除了后面要用的计数矩阵，`r Biocexptpkg("airway")` 包还包含其他 8 个文件，这是实验中
+全部的 reads 数目的一个小子集，选取的是与 1 号染色体的一个小区域比对的 reads。因为完整
+的比对文件太大了（每个样本大约几个GB），并且计算每个样本的片段数都需要10-30分钟，因此我们
+选取了 reads 的一个子集用于演示。我们会使用这些文件来演示如何从BAM文件中建立一个计数矩阵。
+之后，我们会加载完整的包含全部样本和全部数据的计数矩阵，该矩阵在 `r Biocexptpkg("airway")` 
+包中同样有提供，后续的分析会使用完整的矩阵。
 
-Besides the count matrix that we will use later, the
-`r Biocexptpkg("airway")` package also contains eight files 
-with a small subset of the total number of reads in the experiment.
-The reads were selected which aligned to a small region of
-chromosome 1. Here, for demonstration, we chose a subset of reads because the full alignment files are
-large (a few gigabytes each), and because it takes between 10-30
-minutes to count the fragments for each sample.
-We will use these files to demonstrate how a count matrix can be constructed
-from BAM files. Afterwards, we will load the full count matrix
-corresponding to all samples and all data, which is already provided
-in the same package, and will continue the analysis with that full
-matrix.
-
-We load the data package with the example data:
+加载有示例数据的数据包：
 
 ```{r loadairway}
 library("airway")
 ```
 
-The R function *system.file* can be used to find out where on your
-computer the files from a package have been installed. Here we ask for
-the full path to the `extdata` directory, where R packages store
-external data, that is part of the `r Biocexptpkg("airway")` package.
+R函数 *system.file* 用于查找包中的文件在你的计算机中上的安装路径。R一般把外部数据，比如
+“airway” 中的数据，放在 “extdata” 路径下，这里我们查找 “extdata” 的完整路径并赋值给 
+indir。
 
 ```{r dir}
 indir <- system.file("extdata", package="airway", mustWork=TRUE)
 ```
 
-In this directory, we find the eight BAM files (and some other files):
+在这个目录中，我们找到了 8 个 BAM 文件(以及其他的一些文件):
 
 ```{r list.files}
 list.files(indir)
 ```
 
-Typically, we have a table with detailed information for each of our
-samples that links samples to the associated FASTQ and BAM files.
-For your own project, you might create such a comma-separated
-value (CSV) file using a text editor or spreadsheet software such as Excel.
+通常，我们会有一个将样本和相应的 FASTQ、BAM 文件关联起来的详细信息的表格，在你自己的实验中，
+你可以用文本编辑器或电子表格软件如 Excel 建立这样的逗号分隔符文件（CSV）。
 
-We load such a CSV file with *read.csv*:
+我们用 *read.csv* 加载这个 CSV 文件：
 
 ```{r sampleTable}
 csvfile <- file.path(indir, "sample_table.csv")
@@ -271,15 +207,13 @@ sampleTable <- read.csv(csvfile, row.names = 1)
 sampleTable
 ```
 
-Once the reads have been aligned, there are a number of tools that
-can be used to count the number of reads/fragments that can be
-assigned to genomic features for each sample. These often take as
-input SAM/BAM alignment files and a file specifying the genomic
-features, e.g. a GFF3 or GTF file specifying the gene models.
+完成 reads 比对后，有许多的工具可以用于计算每个样本中能与参考基因组比对上的 reads/fragments 
+的数目。这些工具需要输入以下文件：SAM/BAM 文件和一个指定基因组特征的文件，比如一个指定基因模型
+的 GFF3 或 GTF 文件。
 
-## *DESeq2* import functions
+## *DESeq2* 导入函数
 
-The following tools can be used generate count matrices:
+下列工具可以用于生成计数矩阵：
 *summarizeOverlaps* [@Lawrence2013Software],
 *featureCounts* [@Liao2014FeatureCounts],
 *tximport* [@Soneson2015Differential],
@@ -292,71 +226,58 @@ function            | package                                              | fra
 *tximport*          | `r Biocpkg("tximport")`                              | R/Bioconductor | list of matrices       | *DESeqDataSetFromTximport*
 *htseq-count*       | [HTSeq](http://www-huber.embl.de/users/anders/HTSeq) | Python         | files                  | *DESeqDataSetFromHTSeq* 
 
-We now proceed using *summarizeOverlaps*.
-Using the `Run` column in the sample table, we construct the full
-paths to the files we want to perform the counting operation on:
+这里我们用 *summarizeOverlaps* 来处理。
+使用样本表格中的 `Run` 列，我们给将要执行计数操作的文件的建立一个完整路径：
 
 ```{r filenames}
 filenames <- file.path(indir, paste0(sampleTable$Run, "_subset.bam"))
 file.exists(filenames)
 ```
 
-We indicate in Bioconductor that these files are BAM files using the
-*BamFileList* function from the `r Biocpkg("Rsamtools")` package
-that provides an R interface to BAM files.
-Here we also specify details about how the BAM files should
-be treated, e.g., only process 2 million reads at a time. See
-`?BamFileList` for more information.
+`r Biocpkg("Rsamtools")` 包给BAM文件提供了一个R接口，其中的 *BamFileList* 函数指定应用于
+这里的文件。这里我们也指出了关于如何处理BAM文件的细节，比如一次只能处理200万的 reads，键入 
+`?BamFileList` 可以获得更多信息。
 
 ```{r Rsamtools}
 library("Rsamtools")
 bamfiles <- BamFileList(filenames, yieldSize=2000000)
 ```
 
-**Note:** make sure that the chromosome names of the genomic features
-in the annotation you use are consistent with the chromosome names of
-the reference used for read alignment. Otherwise, the scripts might
-fail to count any reads to features due to the mismatching names.
-For example, a common mistake is when the alignment files contain
-chromosome names in the style of `1` and the gene annotation in the
-style of `chr1`, or the other way around. See the *seqlevelsStyle*
-function in the `r Biocpkg("GenomeInfoDb")` package for solutions.
-We can check the chromosome names (here called "seqnames")
-in the alignment files like so:
+**注意：** 务必确保你在注释中使用的基因组的染色体名称与用于 read 比对参考的染色体名称是一致的。
+否则，脚本会由于名称错配而无法计算出任何符合特征的 reads。例如，一个常见的错误是，比对文件中的
+染色体名称是 `1`，而基因注释的染色体名称是 `chr1`，或者其他类似的情况。查看
+ `r Biocpkg("GenomeInfoDb")` 包中的 *seqlevelsStyle* 函数了解解决办法。
+我们可以像这样检查比对文件中的染色体名称（这里称为 "seqnames"）：
 
 ```{r seqinfo}
 seqinfo(bamfiles[1])
 ```
 
-## Defining gene models
+## 定义基因模型
 
-Next, we need to read in the gene model that will be used for
-counting reads/fragments. We will read the gene model from an Ensembl
-[GTF file](http://www.ensembl.org/info/website/upload/gff.html) [@Flicek2014Ensembl],
-using *makeTxDbFromGFF* from the `r Biocpkg("GenomicFeatures")` package.
-GTF files can be downloaded from
-[Ensembl's FTP site](http://www.ensembl.org/info/data/ftp/) or other gene model repositories.
-A *TxDb* object is a database that can be used to
-generate a variety of range-based objects, such as exons, transcripts,
-and genes. We want to make a list of exons grouped by gene for
-counting read/fragments.
+接下来，需要读入一个计数 reads/fragments 的基因模型。我们使用
+ `r Biocpkg("GenomicFeatures")` 
+包中的 *makeTxDbFromGFF* 函数从 Ensembl 的一个 
+[GTF 文件](http://www.ensembl.org/info/website/upload/gff.html) [@Flicek2014Ensembl]
+中读入基因模型。GTF文件可以从 
+[ Ensembl 的 FTP 站点](http://www.ensembl.org/info/data/ftp/) 
+或者其他的基因模型库中下载。
+*TxDb* 对象是一个数据库，可以用来生成各种以距离为基础的对象，比如外显子，转录本、基因等。
+我们想要制作一个按基因分组的外显子列表，用于计算 reads/fragments。
 
-There are other options for constructing a *TxDb*.
-For the *known genes* track from the UCSC Genome Browser [@Kent2002Human],
-one can use the pre-built Transcript DataBase:
-`r Biocannopkg("TxDb.Hsapiens.UCSC.hg19.knownGene")`.
-If the annotation file is accessible from
-`r Biocpkg("AnnotationHub")` (as is the case for the Ensembl genes),
-a pre-scanned GTF file can be imported using *makeTxDbFromGRanges*.
+也有其他构建 *TxDb* 的方法。
+对于从 UCSC Genome Browser [@Kent2002Human]得到的 *已知基因* ，您可以使用预先建立的
+转录本数据库：`r Biocannopkg("TxDb.Hsapiens.UCSC.hg19.knownGene")`。
+如果注释文件可以从 `r Biocpkg("AnnotationHub")` 获取（像 Ensembl 基因一样），
+那么可以用 *makeTxDbFromGRanges* 函数导入一个预扫描好的 GFT 文件。
 
-Here we will demonstrate loading from a GTF file:
+这里我们演示从 GFT 文件处加载 *TxDb* 对象：
 
 ```{r genfeat}
 library("GenomicFeatures")
 ```
 
-We indicate that none of our sequences (chromosomes) are circular
-using a 0-length character vector.
+我们用一个长度为 0 的字符矢量来说明没有一个序列（染色体）是环状的。
 
 ```{r txdb}
 gtffile <- file.path(indir,"Homo_sapiens.GRCh37.75_subset.gtf")
@@ -364,43 +285,39 @@ txdb <- makeTxDbFromGFF(gtffile, format = "gtf", circ_seqs = character())
 txdb
 ```
 
-The following line produces a *GRangesList* of all the exons grouped
-by gene [@Lawrence2013Software]. Each element of the list is a
-*GRanges* object of the exons for a gene.
+下面这行生成了一个按基因[@Lawrence2013Software]分组的所有外显子的 *GRangesList* 。
+列表中的每一个元素是一个基因的外显子的 *GRanges* 对象。
 
 ```{r}
 ebg <- exonsBy(txdb, by="gene")
 ebg
 ```
 
-## Read counting step
+## Read计数
 
-After these preparations, the actual counting is easy. The function
-*summarizeOverlaps* from the `r Biocpkg("GenomicAlignments")`
-package will do this. This produces a *SummarizedExperiment*
-object that contains a variety of information about
-the experiment, and will be described in more detail below.
+经过了以上的准备工作，实际的计数是很容易的。 `r Biocpkg("GenomicAlignments")` 包中的
+*summarizeOverlaps* 函数用于执行计算操作。这一步会产生一个 
+*SummarizedExperiment* 对象，
+其中包含了此实验的各种信息，下面会有详细介绍。
 
-**Note:** If it is desired to perform counting using multiple cores, one can use
-the *register* and *MulticoreParam* or *SnowParam* functions from the
-`r Biocpkg("BiocParallel")` package before the counting call below.
-Expect that the `summarizeOverlaps` call will take at least 30 minutes
-per file for a human RNA-seq file with 30 million aligned reads. By sending
-the files to separate cores, one can speed up the entire counting process.
+**注意：** 如果是想用多核进行并行计算，您可以在执行计算之前使用
+`r Biocpkg("BiocParallel")` 包中的 *register* 和 *MulticoreParam* 或 *SnowParam* 
+函数。对于有 3000 万条比对 reads 的人 RNA-seq 文件，
+`summarizeOverlaps` 的调用预计会在每个文件上耗费至少30分钟的时间。
+而通过多核并行计算，这个过程会快得多。
 
 ```{r}
 library("GenomicAlignments")
 library("BiocParallel")
 ```
 
-Here we specify to use one core, not multiple cores. We could have
-also skipped this line and the counting step would run in serial.
+这里我们指定了使用单核，而不是多核。我们也可以跳过这一行，那么计数过程将会串联执行。
 
 ```{r}
 register(SerialParam())
 ```
 
-The following call creates the *SummarizedExperiment* object with counts:
+下面的操作生成了带有计数值的 *SummarizedExperiment* 对象：
 
 ```{r}
 se <- summarizeOverlaps(features=ebg, reads=bamfiles,
@@ -410,37 +327,26 @@ se <- summarizeOverlaps(features=ebg, reads=bamfiles,
                         fragments=TRUE )
 ```
 
-We specify a number of arguments besides the `features` and the
-`reads`. The `mode` argument describes what kind of read overlaps will
-be counted. These modes are shown in Figure 1 of the
-*Counting reads with summarizeOverlaps* vignette for the
-`r Biocpkg("GenomicAlignments")` package.
-Note that fragments will be counted only once to each gene, even if
-they overlap multiple exons of a gene which may themselves be overlapping.
-Setting `singleEnd` to `FALSE`
-indicates that the experiment produced paired-end reads, and we want
-to count a pair of reads (a fragment) only once toward the count
-for a gene. 
-The `fragments` argument can be used when `singleEnd=FALSE` to specify if unpaired
-reads should be counted (yes if `fragments=TRUE`).
+我们在 `features` 和 `reads` 之外还指定了许多的参数。参数 `mode` 表示那一种
+read 重叠将会被计数。 全部的 modes 参见`r Biocpkg("GenomicAlignments")` 包
+的 *Counting reads with summarizeOverlaps* 使用指南的图 1。
+注意 fragments 在每个基因中只会被计数一次，即使它们重叠在一个基因的多个外显子中。
+将 `singleEnd` 设置为 `FALSE` 表示测序实验是双端测序，因此我们在一个基因的计算过程中
+将一对reads只计算一次。
+当 `singleEnd=FALSE` 时， `fragments` 参数可以被用于指定未成对的reads是否应该被计数。
+（TRUE表示计数）。
 
-In order to produce correct counts, it is important to know if the
-RNA-seq experiment was strand-specific or not. This experiment was not
-strand-specific so we set `ignore.strand` to `TRUE`.
-However, certain strand-specific protocols could have the reads
-align only to the opposite strand of the genes.
-The user must check if the experiment was strand-specific and if so,
-whether the reads should align to the forward or reverse strand of the genes.
-For various counting/quantifying tools, one specifies counting on the
-forward or reverse strand in different ways, although this task 
-is currently easiest with *htseq-count*, *featureCounts*, or the
-transcript abundance quantifiers mentioned previously.
-It is always a good idea to check the column sums of the count matrix
-(see below) to make sure these totals match the expected of the number
-of reads or fragments aligning to genes.  Additionally, one can
-visually check the read alignments using a genome visualization tool.
+为了生成正确的计数，弄清楚 RNA-seq 实验是否具有链特异性非常重要。 这个实验不是链特异性的，
+所以我们设置 `ignore.strand` 为 `TRUE`。
+然而，有些链特异性的实验会存在一些 reads hi对齐到基因的负链上的情况。
+用户必须检查其实验是否是链特异性的，如果是，reads 应该同基因的正链还是负链比对。
+对于各种计数/定量工具，有不同的方法指定是计数正链还是负链，目前这个任务用 *htseq-count*，
+*featureCounts*, 或者前面提到的转录本量化软件都能很容易的完成。
+检查计数矩阵的（见下）的各列的和是很有必要的，这可以确保该总数与比对到基因上的 
+reads/fragments 的预期数目是否一致。
+此外，也可以用基因组可视化工具来直观地检查比对的结果。
 
-## SummarizedExperiment
+## SummarizedExperiment 查看
 
 ```{r sumexp, echo=FALSE}
 par(mar=c(0,0,0,0))
@@ -458,29 +364,21 @@ polygon(c(45,47,47,45),c(75,75,95,95),col="palegreen3",border=NA)
 text(67.5,85,"colData")
 ```
 
-**The component parts of a *SummarizedExperiment* object.** The `assay` (pink
-block) contains the matrix of counts, the `rowRanges` (blue block) contains
-information about the genomic ranges and the `colData` (green block)
-contains information about the samples. The highlighted line in each
-block represents the first row (note that the first row of `colData`
-lines up with the first column of the `assay`). 
+***SummarizedExperiment* 对象的构成。** `assay` （粉色块）
+中包含了计数矩阵，`rowRanges` （蓝色快）中包含基因组距离信息，`colData` （绿色快）包含
+了样本信息。每个色块中高亮的行表示第一行（注意 `colData` 的第一行与`assay`的第一列是对齐的。）
 
-The *SummarizedExperiment* container is diagrammed in the Figure above
-and discussed in the latest Bioconductor paper [@Huber2015Orchestrating].
-In our case we have created a single matrix named "counts" that contains the fragment
-counts for each gene and sample, which is stored in `assay`. It is
-also possible to store multiple matrices, accessed with `assays`.
-The `rowRanges` for our object is the *GRangesList* we used for
-counting (one *GRanges* of exons for each row of the count matrix).
-The component parts of the *SummarizedExperiment* are accessed with an
-R function of the same name: `assay` (or `assays`), `rowRanges` and `colData`.
+*SummarizedExperiment* 图解如上，在最新的 Bioconductor 文章中有z关于它的讨论
+[@Huber2015Orchestrating]。在我们的这个例子中，我们生成了一个名为 "counts" 的单矩阵，
+其包含每个样本和基因的 fragment 计数值，存储在 `assay`中。在 `assays` 中存储多个计数
+矩阵也是可以的。
+这个对象中的 `rowRanges` 即为我们用来计算的 *GRangesList*。（每个外显子的 
+*GRanges* 对应于计数矩阵的每一行）。*SummarizedExperiment* 的组成部分可以
+用R里面的同名函数查看：`assay` （或者 `assays`），`rowRanges` 和 `colData`。
 
-This example code above actually only counted a small subset of fragments
-from the original experiment. Nevertheless, we
-can still investigate the resulting *SummarizedExperiment* by looking at
-the counts in the `assay` slot, the phenotypic data about the samples in
-`colData` slot (in this case an empty *DataFrame*), and the data about the
-genes in the `rowRanges` slot.
+上面的示例代码实际上只计算了原始实验的 fragments 的一小部分。尽管如此,通过查看 `assay` 槽中的
+计数我们仍然可以研究 *SummarizedExperiment* 的结果。样本的表型数据在 `colData` 槽中
+（在本例中是一个空的 *DataFrame*），有关基因的数据在`rowRanges` 槽中。
 
 ```{r}
 se
@@ -490,45 +388,38 @@ head(assay(se), 3)
 colSums(assay(se))
 ```
 
-The `rowRanges`, when printed, only shows the first *GRanges*, and tells us
-there are 19 more elements:
+`rowRanges` 在打印时,只展示第一个 *GRanges*，并告诉我们还有19个元素：
 
 ```{r}
 rowRanges(se)
 ```
 
-The `rowRanges` also contains metadata about the construction
-of the gene model in the `metadata` slot. Here we use a helpful R
-function, `str`, to display the metadata compactly:
+`rowRanges`也包含与 `metadata` 槽中的基因模型的构建有关的元数据。
+这里我们使用`str`这个R函数来简洁的展示metadata。
 
 ```{r}
 str(metadata(rowRanges(se)))
 ```
 
-The `colData`:
+`colData`:
 
 ```{r}
 colData(se)
 ```
 
-The `colData` slot, so far empty, should contain all the metadata.
-Because we used a column of `sampleTable` to produce the `bamfiles`
-vector, we know the columns of `se` are in the same order as the
-rows of `sampleTable`. We can assign the `sampleTable` as the
-`colData` of the summarized experiment, by converting
-it into a *DataFrame* and using the assignment function:
+`colData`插槽目前还是空的，而它应该包含所有的 meta 数据。因为我们使用 `sampleTable`
+de 一列来生成` bamfiles` 向量，所以我们知道 `se` 列的顺序和 `sampleTable` 行的顺序是
+一样的。因此我们可以将 `sampleTable` 转化为数据框然后利用分配函数将其作为总结性实验的 `colData`。
 
 ```{r}
 colData(se) <- DataFrame(sampleTable)
 colData(se)
 ```
 
-## Branching point
+## 分支点
 
-At this point, we have counted the fragments which overlap the genes
-in the gene model we specified. This is a branching point where we
-could use a variety of Bioconductor packages for exploration and
-differential expression of the count data, including
+现在，我们已经根据指定的基因模型算出了重叠在基因上的 fragments，这是一个分支点，此处我们
+可以使用为数众多的 Bioconductor 包对算得的数据进行探索性分析和差异表达分析。包括
 `r Biocpkg("edgeR")` [@Robinson2009EdgeR],
 `r Biocpkg("limma")` with the voom method [@Law2014Voom],
 `r Biocpkg("DSS")` [@Wu2013New],
@@ -536,67 +427,46 @@ differential expression of the count data, including
 `r Biocpkg("baySeq")` [@Hardcastle2010BaySeq].
 @Schurch2016How
 [compared performance](https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/27022035/) 
-of different statistical methods
-for RNA-seq using a large number of biological replicates and can help
-users to decide which tools make sense to use, and how many
-biological replicates are necessary to obtain a certain sensitivity.
-We will continue using `r Biocpkg("DESeq2")` [@Love2014Moderated].
-The *SummarizedExperiment* object is all we
-need to start our analysis. In the following section we will show how
-to use it to create the data object used by `r Biocpkg("DESeq2")`.
+各种不同的统计学方法对 RNA-seq 进行了大量的生物学重复，这有助于用户决定使用哪些工具是最合适的，
+以及达到某一程度的灵敏度需要多少生物学重复。
+我们会继续使用`r Biocpkg("DESeq2")` [@Love2014Moderated]。我们都需要
+*SummarizedExperiment* 对象来开始我们的分析。下面的部分我们会展示如何用它来
+建立供`r Biocpkg("DESeq2")`使用的数据对象。
 
 <a id="construct"></a>
 
-# The *DESeqDataSet* object, sample information and the design formula
+# *DESeqDataSet*对象，样本信息和设计公式
 
-Bioconductor software packages often define and use a custom class for
-storing data that makes sure that all the needed data slots are
-consistently provided and fulfill the requirements.  In addition,
-Bioconductor has general data classes (such as the
-*SummarizedExperiment*) that can be used to move data between
-packages. Additionally, the core Bioconductor classes provide useful
-functionality: for example, subsetting or reordering the rows or
-columns of a *SummarizedExperiment* automatically subsets or reorders
-the associated *rowRanges* and *colData*, which can help to prevent
-accidental sample swaps that would otherwise lead to spurious
-results. With *SummarizedExperiment* this is all taken care of behind
-the scenes.
+Bioconductor 软件包通常定义和使用自定义的类来存储数据，以确保始终提供所有需要的数据槽并满足
+分析需求。此外，Bioconductor有通用性的数据类（如 *SummarizedExperiment* ）可用于在包之
+间转移数据。此外，Bionconductor的核心类提供了一些有用的功能函数：例如，对一个 *SummarizedExperiment*
+ 的行或列取子集或者重排序，会自动对相应的 *rowRanges*和colData* 也取子集或重排序，从而
+可以避免意外的样本交换，以防止产生虚假的结果。这些都已经在 *SummarizedExperiment* 的底
+层设置好了。
 
-In *DESeq2*, the custom class is called *DESeqDataSet*. It is built on
-top of the *SummarizedExperiment* class, and it is easy to convert
-*SummarizedExperiment* objects into *DESeqDataSet* objects, which we
-show below.  One of the two main differences is that the `assay` slot is
-instead accessed using the *counts* accessor function, and the
-*DESeqDataSet* class enforces that the values in this matrix are
-non-negative integers.
+在 *DESeq2* 中，自定义的类叫做 *DESeqDataSet*。它建立于 *SummarizedExperiment*类
+之上，所以很容易将 *SummarizedExperiment* 对象转变成 *DESeqDataSet* 对象，如下所示。
+两者之间的主要的区别是 `assay` 插槽被替之以 *counts* 存取器访问函数，并且 
+*DESeqDataSet* 类
+强制要求矩阵中的值为非负整数。
 
-A second difference is that the *DESeqDataSet* has an associated
-*design formula*. The experimental design is specified at the
-beginning of the analysis, as it will inform many of the *DESeq2*
-functions how to treat the samples in the analysis (one exception is
-the size factor estimation, i.e., the adjustment for differing library
-sizes, which does not depend on the design formula).  The design
-formula tells which columns in the sample information table (`colData`)
-specify the experimental design and how these factors should be used
-in the analysis.
+另一个区别是 *DESeqDataSet* 有关联的 *设计公式* 。实验设计在分析开始的时候被指定，
+这个公式会告知许多的 *DESeq2* 函数如何处理所分析的样本（尺寸因子估算，即不同文库的尺寸
+校正是例外情况，它不依赖于设计公式）。设计公式能够告诉我们在样本信息表中的哪些列指定了
+实验设计以及这些因素在数据分析中应该如何使用。
 
-The simplest design formula for differential expression would be
-`~ condition`, where `condition` is a column in `colData(dds)` that
-specifies which of two (or more groups) the samples belong to.  For
-the airway experiment, we will specify `~ cell + dex`
-meaning that we want to test for the effect of dexamethasone (`dex`)
-controlling for the effect of different cell line (`cell`). We can see
-each of the columns just using the `$` directly on the
-*SummarizedExperiment* or *DESeqDataSet*:
+最简单的用于差异表达分析的设计公式是 `~ condition`，`condition`是 `colData(dds)`
+ 中的一列，该列指定这两组样本（或者更多的组）属于哪一个 condition。对于这个呼吸道实验，
+我们会指定 `~ cell + dex` ，意思是我们想测试地塞米松（`dex`）在不同的细胞系中作用的
+差异。我们可以在 *SummarizedExperiment* 或者 *DESeqDataSet* 中用 `$` 来查看每一列。
 
 ```{r secell}
 se$cell
 se$dex
 ```
 
-**Note:** it is prefered in R that the first level of a factor be the
-reference level (e.g. control, or untreated samples), so we can
-*relevel* the `dex` factor like so: 
+**注意：** 在R中，将因子的第一个水平设为参考水平更加合适。（比如，对照的或者未处理的样本），所以
+我们可以像这样 *relevel* `dex` 因子：
 
 ```{r sedex}
 library("magrittr")
@@ -604,93 +474,71 @@ se$dex %<>% relevel("untrt")
 se$dex
 ```
 
-`%<>%` is the compound assignment pipe-operator from
-the `r CRANpkg("magrittr")` package, the above line of code is a concise way of saying
+`%<>%` 是 `r CRANpkg("magrittr")` 包中的复合赋值管道运算符，上面的这行代码是下方代码的简洁写法。
 
 ```{r explaincmpass, eval = FALSE}
 se$dex <- relevel(se$dex, "untrt")
 ```
 
-For running *DESeq2* models, you can use R's formula notation to
-express any fixed-effects experimental design.
-Note that *DESeq2* uses the same formula notation as, for instance, the *lm*
-function of base R. If the research aim is to determine for which
-genes the effect of treatment is different across groups, then
-interaction terms can be included and tested using a design such as
-`~ group + treatment + group:treatment`. See the manual page for
-`?results` for more examples. We will show how to use an interaction
-term to test for condition-specific changes over time in a 
-time course example below.
+为了运行 *DESeq2* 模型，你可以使用 R 的公式符号来表达任何的固定效应的实验设计。
+注意 *DESeq2* 只使用相同公示符号，像 R 基本函数 *lm* 那样。如果研究目标是发现整个组
+中的哪个基因的影响或者处理是不同的，那么交互作用项就能用一个像 
+`~ group + treatment + group:treatment` 这样的设计来纳入并检验。更多例子请查看手册的 
+`?results` 页面。我们会在下面的一个时间进程的示例中展示如何用一个交互作用项来检验特定条件的
+改变。
 
-In the following sections, we will demonstrate the construction of the
-*DESeqDataSet* from two starting points:
+接下来的部分，我们会用两种方法来展示 *DESeqDataSet* 的构建：
 
-* from a *SummarizedExperiment* object 
-* from a count matrix and a sample information table
+* 从一个 *SummarizedExperiment* 对象开始
+* 从一个技术矩阵和一个样本信息表开始
 
-For a full example of using the *HTSeq* Python package for read
-counting, please see the `r Biocexptpkg("pasilla")` vignette.  For an
-example of generating the *DESeqDataSet* from files produced by
-*htseq-count*, please see the `r Biocpkg("DESeq2")` vignette.
+有关用 Python 包 *HTSeq* 来计数 read 的完整示例，请查看 `r Biocexptpkg("pasilla")` 
+指南。有关用 *htseq-count* 产出的文件来生成 *DESeqDataSet* 的示例请查看
+ `r Biocpkg("DESeq2")` 指南。
 
-## Starting from *SummarizedExperiment*
+## 从 *SummarizedExperiment* 开始
 
-We now use R's *data* command to load a prepared
-*SummarizedExperiment* that was generated from the publicly available
-sequencing data files associated with @Himes2014RNASeq,
-described above.  The steps we used to produce this object were
-equivalent to those you worked through in the previous sections,
-except that we used all the reads and all the genes. For more details
-on the exact steps used to create this object, type
-`vignette("airway")` into your R session. 
+现在我们用 R 的 *data* 命令来加载一个前人已经做好的 *SummarizedExperiment*，它来自与@Himes2014RNASeq
+有关的公共序列数据文件，我们在前面已经描述过了。我们生成此对象的步骤与您在前面部分中完成的步骤相同，但是这里我们用的是全部的 reads 和全部的基因。关于此步骤的更多细节，在您的 R 程序中键入
+`vignette("airway")`。
 
 ```{r}
 data("airway")
 se <- airway
 ```
 
-Again, we want to specify that `untrt` is the reference level for the
-dex variable:
+再一次的，我们指定：`untrt` 是dex变量的参考水平：
 
 ```{r}
 se$dex %<>% relevel("untrt")
 se$dex
 ```
 
-We can quickly check the millions of fragments that uniquely aligned
-to the genes (the second argument of *round* tells how many decimal
-points to keep).
+我们可以快速检查上百万的与基因唯一比对的 fragments。（第二个参数 *round* 告诉我们保留
+几位小数）。
 
 ```{r}
 round( colSums(assay(se)) / 1e6, 1 )
 ```
 
-Supposing we have constructed a *SummarizedExperiment* using
-one of the methods described in the previous section, we now need to
-make sure that the object contains all the necessary information about
-the samples, i.e., a table with metadata on the count matrix's columns
-stored in the `colData` slot:
+假设我们已经用前面部分所描述的方法之一构建了一个 *SummarizedExperiment*，现在要确认此对象
+中是否包含了关于样本的所有必要信息，即一个存储在 `colData` 槽中的表格，该表中存储的是计数
+矩阵全部列的 meta 信息。
 
 ```{r}
 colData(se)
 ```
 
-Here we see that this object already contains an informative
-`colData` slot -- because we have already prepared it for you, as
-described in the `r Biocexptpkg("airway")` vignette.
-However, when you work with your own data, you will have to add the
-pertinent sample / phenotypic information for the experiment at this stage.
-We highly recommend keeping this information in a comma-separated
-value (CSV) or tab-separated value (TSV) file, which can be exported
-from an Excel spreadsheet, and the assign this to the `colData` slot,
-making sure that the rows correspond to the columns of the
-*SummarizedExperiment*. We made sure of this correspondence earlier by
-specifying the BAM files using a column of the sample table.
+这里可以看出这个对象已经包含了一个信息全面的 `colData` 槽 —— 我们早已为您准备好了，
+像 `r Biocexptpkg("airway")` 的指南中描述的那样。
+但是，当您使用自己的数据时，您必须在这个步骤中添加自己实验的相关样本/表型信息。我们强烈建议
+将这个信息放在一个逗号分隔符文件（CSV）或者制表符分隔符文件（TSV）中以便 Excel 处理，同时
+将这个表格导入 `colData` 槽中，并确保它的行与 *SummarizedExperiment* 的列是对
+应的。我们之前通过使用样本表格的列指定 BAM 文件来确保此对应关系。
 
-Once we have our fully annotated *SummarizedExperiment* object,
-we can construct a *DESeqDataSet* object from it that will then form
-the starting point of the analysis.
-We add an appropriate design for the analysis:
+一旦我们有了完整的注释好的 *SummarizedExperiment* 对象，我们可以借此构建一个
+ *DESeqDataSet* 对象，其将成为分析的起点。
+ 我们给分析加入一个合适的设计公式：
 
 ```{r}
 library("DESeq2")
@@ -700,51 +548,40 @@ library("DESeq2")
 dds <- DESeqDataSet(se, design = ~ cell + dex)
 ```
 
-## Starting from count matrices
+## 从计数矩阵开始
 
-In this section, we will show how to build an *DESeqDataSet* supposing
-we only have a count matrix and a table of sample information.
+这个部分，我们会展示在只有计数矩阵和样本信息表格的情况下，如何构建 *DESeqDataSet*。
 
-**Note:** if you have prepared a *SummarizedExperiment* you should skip this
-section. While the previous section would be used to construct a
-*DESeqDataSet* from a *SummarizedExperiment*, here we first extract
-the individual object (count matrix and sample info) from the
-*SummarizedExperiment* in order to build it back up into a new object
--- only for demonstration purposes.
-In practice, the count matrix would either be read in from a file or
-perhaps generated by an R function like *featureCounts* from the
-`r Biocpkg("Rsubread")` package [@Liao2014FeatureCounts].
+**注意：** 如果你已经准备好了一个 *SummarizedExperiment*，那么你应该跳过此部分。
+虽然之前的部分是从 *SummarizedExperiment* 中构建 *DESeqDataSet*，这里我们依然
+首先从 *SummarizedExperiment* 中提取出个别对象（计数矩阵和样本信息），从而回退建立
+一个新的对象——仅仅是为了演示而已。
+在实际操作中，计数矩阵不是从一个文件从读取，就是从类似 *featureCounts* 这样的
+`r Biocpkg("Rsubread")` 包 [@Liao2014FeatureCounts]中的 R 函数生成的。
 
-The information in a *SummarizedExperiment* object can be
-accessed with accessor functions. For example, to see the actual data,
-i.e., here, the fragment counts, we use the *assay* function. (The *head*
-function restricts the output to the first few lines.)
+ *SummarizedExperiment* 中的信息可以通过访问函数来访问。例如，查看实际的数据，在这里
+ 即为 fragment 的计数值，可以使用 *assay* 函数。（ *head* 函数作用是只输出前几行。）
 
 ```{r}
 countdata <- assay(se)
 head(countdata, 3)
 ```
 
-In this count matrix, each row represents an Ensembl gene, each column
-a sequenced RNA library, and the values give the raw numbers of
-fragments that were uniquely assigned to the respective gene in each
-library. We also have information on each of the samples (the columns of the
-count matrix). If you've counted reads with some other software, it is
-very important to check that the columns of the count matrix correspond to the rows
-of the sample information table. 
+在这个计数矩阵中，每一行代表一个 Ensembl 基因，每一列代表一个测序的 RNA 文库，矩阵的
+值是每个文库中唯一分配给相应基因的片段的原始数目。我们也有每个样本的信息（计数矩阵的列名）。
+如果您用其他的软件计算了 reads，非常重要的一点就是计数矩阵的列名要和样本信息表格的行名
+一一对应。
 
 ```{r}
 coldata <- colData(se)
 ```
 
-We now have all the ingredients to prepare our data object in a form
-that is suitable for analysis, namely:
+现在我们已经有了生成数据对象的所有的要素，并且它们呈现为一种适合分析的格式，它们是：
 
-* `countdata`: a table with the fragment counts
-* `coldata`: a table with information about the samples
+* `countdata`: 一个计数片段的表格
+* `coldata`: 一个样本信息的表格
 
-To now construct the *DESeqDataSet* object from the matrix of counts and the
-sample information table, we use:
+为了用计数矩阵和样本信息表格构建 *DESeqDataSet* 对象，我们使用如下代码：
 
 ```{r}
 ddsMat <- DESeqDataSetFromMatrix(countData = countdata,
@@ -752,32 +589,23 @@ ddsMat <- DESeqDataSetFromMatrix(countData = countdata,
                                   design = ~ cell + dex)
 ```
 
-We will continue with the object generated from the
-*SummarizedExperiment* section. 
+我们会用 *SummarizedExperiment* 部分生成的对象继续下面的部分。
 
 <a id="eda"></a>
 
-# Exploratory analysis and visualization
+# 探索性分析和可视化
 
-There are two separate paths in this workflow; the one we will
-see first involves *transformations of the counts*
-in order to visually explore sample relationships.
-In the second part, we will go back to the original raw counts
-for *statistical testing*. This is critical because
-the statistical testing methods rely on original count data
-(not scaled or transformed) for calculating the precision of measurements. 
+本工作流程有两个不同的方向：第一个方向是 *计数值的转换*，这部分是为了可视化的
+探索样本之间的关系。第二个方向我们会回退到原始的计数值进行 *统计检验*。统计检
+验的方法依赖于原始的计数值数据（未经缩放或转换）来计算测量方法的精确度。
 
-## Pre-filtering the dataset
+## 数据集预过滤
 
-Our count matrix with our *DESeqDataSet* contains many rows with only
-zeros, and additionally many rows with only a few fragments total. In
-order to reduce the size of the object, and to increase the speed of
-our functions, we can remove the rows that have no or nearly no
-information about the amount of gene expression.  Here we apply the
-most minimal filtering rule: removing rows of the *DESeqDataSet* that
-have no counts, or only a single count across all samples. Additional
-weighting/filtering to improve power is applied at a later step in the
-workflow. 
+我们构建的 *DESeqDataSet* 计数矩阵中有许多行值都是 0，此还有许多行的计数值非常小。
+为了减少对象的大小，也为了提高运算速度，我们可以去掉这些不包含或仅
+包含很少基因表达信息的行。这里我们采取了最保守的
+的过滤规则：移除 *DESeqDataSet* 中 0 数目的行，或者数目为 1 的行。另外的用于提高
+效能的加权/过滤会在后面的步骤中用到。
 
 ```{r}
 nrow(dds)
@@ -785,28 +613,19 @@ dds <- dds[ rowSums(counts(dds)) > 1, ]
 nrow(dds)
 ```
 
-## The variance stabilizing transformation and the rlog
+## 方差稳定转换和 rlog 转换
 
-Many common statistical methods for exploratory analysis of
-multidimensional data, for example clustering and *principal
-components analysis* (PCA), work best for data that generally has the
-same range of variance at different ranges of the mean values. When
-the expected amount of variance is approximately the same across
-different mean values, the data is said to be *homoskedastic*. For
-RNA-seq counts, however, the expected variance grows with the mean. For
-example, if one performs PCA directly on a matrix of
-counts or normalized counts (e.g. correcting for differences in
-sequencing depth), the resulting plot typically depends mostly
-on the genes with *highest* counts because they show the largest
-absolute differences between samples. A simple and often used
-strategy to avoid this is to take the logarithm of the normalized
-count values plus a pseudocount of 1; however, depending on the
-choice of pseudocount, now the genes with the very *lowest* counts
-will contribute a great deal of noise to the resulting plot, because
-taking the logarithm of small counts actually inflates their variance.
-We can quickly show this property of counts with some simulated
-data (here, Poisson counts with a range of lambda from 0.1 to 100).
-We plot the standard deviation of each row (genes) against the mean:
+许多常用的用于多维数据的探索性统计分析方法，例如聚类和
+ *主成分分析* （PCA），通常在方差齐性，而均值不等的数据中分析效果最好。当均值不等而方差
+期望值大致相等时，这种数据被称为 *homoskedastic* 。
+但是对于 RNA-seq 的原始数据，方差的期望值总是随均值的增加而增加。如果直接在原始的或标准化
+（比如进行了测序深度校正）的计数矩阵上执行 PCA 分析，表达量最高的几个基因会对结果图产生非常
+大的影响，因为它们在样本间有着最大的绝对差异。要避免这种情况，一种简单且实用的
+方法是在标准化计数值上加上一个伪计数值后取对数；然而，这时表达量极低的那些基因又会对结果
+造成比较大的影响，因为低计数值固有的强烈的泊松噪声以及对数计算对低表达基因差异的放大，使那些
+低表达的基因会显示出更强的样本间差异。我们可以快速地用一些模拟数据来展示计数值的这种特性。
+（这里，泊松计数值有一个从0.1到100的 lambda 范围）。我们画出了每
+一行（基因）均值的标准差：
 
 ```{r meanSdCts}
 lambda <- 10^seq(from = -1, to = 2, length = 1000)
@@ -815,55 +634,40 @@ library("vsn")
 meanSdPlot(cts, ranks = FALSE)
 ```
 
-And for logarithm-transformed counts:
+对于进行了 log 转换的计数值:
 
 ```{r meanSdLogCts}
 log.cts.one <- log2(cts + 1)
 meanSdPlot(log.cts.one, ranks = FALSE)
 ```
 
-The logarithm with a small pseudocount amplifies differences when the
-values are close to 0. The low count genes with low signal-to-noise
-ratio will overly contribute to sample-sample distances and PCA
-plots. 
+当计数值近似于 0 时，加上一个小的伪数值再取对数会扩大该计数值的差异。因此具有低信噪比的
+低计数值的基因将过度的影响到样本间的距离和 PCA 图的结果。
 
-As a solution, *DESeq2* offers two transformations for count data that
-stabilize the variance across the mean: 
-the *variance stabilizing transformation* (VST)
-for negative binomial data with a dispersion-mean trend
-[@Anders2010Differential], implemented in the *vst* function,
-and the *regularized-logarithm transformation* or *rlog* [@Love2014Moderated].
+为了解决这个问题， *DESeq2* 为计数数据提供了两个转换方法来根据平均数稳定方差：
+ *方差稳定转换* (VST)，用于有离均趋势的负二项数据@Anders2010Differential]，
+用 *vst* 函数执行，以及 *regularized-logarithm transformation* 或者 
+*rlog* [@Love2014Moderated]。
 
-For genes with high counts, both the VST and the rlog will give similar result
-to the ordinary log2 transformation of normalized counts.  For genes
-with lower counts, however, the values are shrunken towards a middle
-value. The VST or rlog-transformed data then
-become approximately homoskedastic (more flat trend in the *meanSdPlot*), 
-and can be used directly for computing distances between samples,
-making PCA plots, or as input to downstream methods which perform best
-with homoskedastic data.
+对于高计数值的基因，VST 和 rlog 对一般的标准化计数值的 log2 转换作用基本相同。然而，对于
+低计数值的基因，转换后的值会趋向于中间值。之后 VST 或者 rlog 转换的数据会变成近似的同方差
+（在 *meanSdPlot* 中趋势更平缓），可以直接用来计算样本间的距离，画 PCA 图，或者作为下
+游的会用到同方差数据的方法的输入。
 
-**Which transformation to choose?** 
-The VST is much faster to compute and is less sensitive to high count
-outliers than the rlog. The rlog tends to work well on
-small datasets (n < 30), potentially outperforming the VST when there is
-a wide range of sequencing depth across samples (an order of magnitude difference). 
-We therefore recommend the VST for medium-to-large datasets (n > 30). 
-You can perform both transformations and compare the `meanSdPlot` or
-PCA plots generated, as described below.
 
-Note that the two transformations offered by DESeq2 are provided for
-applications *other* than differential testing. 
-For differential testing we recommend the
-*DESeq* function applied to raw counts, as described later
-in this workflow, which also takes into account the dependence of the
-variance of counts on the mean value during the dispersion estimation
-step.
+**选择哪一个转换方法？** 
+VST 的计算速度要快得多，并且对异常的高计数值的敏感性低于 rlog。rlog在小数据集（n < 30）
+上表现得更好，当存在跨样本的大范围的测序深度时，VST 可能表现得更好（一个数量级的差异）。
+因此我们推荐在中到大的数据集（n > 30）上使用 VST。你也可以两个转换方法都用，比较
+生成的 `meanSdPlot` 或PCA图，就像下面描述的那样。
 
-Both *vst* and *rlog* return a *DESeqTransform* object which is based
-on the *SummarizedExperiment* class. The transformed values are no
-longer counts, and are stored in the *assay* slot. The *colData* that
-was attached to `dds` is still accessible:
+注意，DESeq2 提供的这两个转换方法是为差异检验以外的*其他*应用提供的。
+对于差异检验，我们推荐使用适用于原始计数值的 *DESeq* 函数，像本工作流程后面描述的那样，
+该函数也考虑到了在离差估算步骤中计数值的方差对于平均值的依赖。
+
+*vst* 和 *rlog* 都会返回一个基于 *SummarizedExperiment* 类的 *DESeqTransform* 
+对象。转换后的值不再是计数值，并存储在 *assay* 槽中。附加在 `dds` 的 *colData* 仍然
+是可以访问的。
 
 ```{r vst}
 vsd <- vst(dds, blind = FALSE)
@@ -871,28 +675,22 @@ head(assay(vsd), 3)
 colData(vsd)
 ```
 
-Again, for the *rlog*:
+同样的, 对于 *rlog*：
 
 ```{r rlog}
 rld <- rlog(dds, blind = FALSE)
 head(assay(rld), 3)
 ```
 
-In the above function calls, we specified `blind = FALSE`, which means
-that differences between cell lines and treatment (the variables in
-the design) will not contribute to the expected variance-mean trend of
-the experiment. The experimental design is not used directly in the
-transformation, only in estimating the global amount of variability in
-the counts.  For a fully *unsupervised* transformation, one can set
-`blind = TRUE` (which is the default).
+在上面的函数调用中，我们设置了 `blind = FALSE` ，意思是着细胞系和处理之间的差异
+（实验设计中的变量）将不会影响实验预期的方差-均值趋势。这个转换中并没有用到实验设计
+的信息，实验设计仅在估计计数值的总体变异性时用到过。对于完全的*无监督*转换，可以
+设置 `blind = TRUE` （这是默认设置）。
 
-To show the effect of the transformation, in the figure below
-we plot the first sample
-against the second, first simply using the *log2* function (after adding
-1, to avoid taking the log of zero), and then using the VST and rlog-transformed
-values. For the *log2* approach, we need to first estimate *size factors* to
-account for sequencing depth, and then specify `normalized=TRUE`.
-Sequencing depth correction is done automatically for the *vst* and *rlog*.
+为了展示转换的效果，下面我们画了第一个样本和第二个样本的计数值散点图，第一张图简单地
+使用了 *log2* 转换（加了伪数值 1，以避免产生 log0），接着使用了 VST 和 rlog 转换
+后的值画图。对于 *log2* 方法，我们首先需要估算*尺寸因子*校正释测序深度，然后指定 
+`normalized=TRUE` 。测序深度校正在 *vst* 和 *rlog* 中是自动完成的。
 
 ```{r transformplot, fig.width = 6, fig.height = 2.5}
 library("dplyr")
@@ -912,56 +710,42 @@ ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation)  
 ```
 
-**Scatterplot of transformed counts from two samples**. Shown are
-scatterplots using the log2 transform of normalized counts (left),
-using the VST (middle), and using the rlog (right). While the rlog is
-on roughly the same scale as the log2 counts, the VST has a upward
-shift for the smaller values. It is the differences between samples
-(deviation from y=x in these scatterplots) which will contribute to
-the distance calculations and the PCA plot.
+**两个样本的转换后的计数值散点图**。 这里展示的是分别经过了 log2（左边），VST（中间），
+以及 rlog（右边）转换后画出来的标准化计数值的散点图。可以看到，rlog 与 log2 的计数值
+大致上是相同尺度的，而 VST 在较小的值上会有一些上偏。样本之间的差异（散点图上相对于
+直线 y=x 的偏差）用于样本距离计算和 PCA 绘图。
 
-We can see how genes with low counts (bottom left-hand corner) seem to
-be excessively variable on the ordinary logarithmic scale, while the
-VST and rlog compress differences for the low count genes
-for which the data provide little information about differential
-expression.
+我们可以看见低计数值的基因（左下角）似乎在一般的对数尺度上变化很大，对于那些在差异表达
+上提供了很少信息的数据，VST 和rlog 压缩了低计数值基因之间的差异。
 
-## Sample distances
+## 样本距离
 
-A useful first step in an RNA-seq analysis is often to assess overall
-similarity between samples: Which samples are similar to each other,
-which are different? Does this fit to the expectation from the
-experiment's design?
+RNA-seq分析一个有效的第一步通常是评估样本之间的相似性：哪些样本彼此相似，哪些是不
+相似的？这些符合实验设计的预期吗？
 
-We use the R function *dist* to calculate the Euclidean distance
-between samples. To ensure we have a roughly equal contribution from
-all genes, we use it on the VST data. We need to
-transpose the matrix of values using *t*, because the *dist* function
-expects the different samples to be rows of its argument, and
-different dimensions (here, genes) to be columns.
+我们用R函数 *dist* 来计算样本之间的欧几里得距离。为了保证所有的基因在距离计算中贡献大致
+相等，我们使用 VST 转换后的数据。我们需要用 *t* 来对调矩阵的值，因为 *dist* 函数期望
+它的参数的行是不同的样本，列是不同的维度（在这里指基因）。
 
 ```{r}
 sampleDists <- dist(t(assay(vsd)))
 sampleDists
 ```
 
-We visualize the distances in a heatmap in a figure below, using the function
-*pheatmap* from the `r CRANpkg("pheatmap")` package.
+使用 `r CRANpkg("pheatmap")` 包中的 *pheatmap* 函数，我们用热图可视化地
+展示样本距离。
 
 ```{r}
 library("pheatmap")
 library("RColorBrewer")
 ```
 
-In order to plot the sample distance matrix with the rows/columns
-arranged by the distances in our distance matrix,
-we manually provide `sampleDists` to the `clustering_distance`
-argument of the *pheatmap* function.
-Otherwise the *pheatmap* function would assume that the matrix contains
-the data values themselves, and would calculate distances between the
-rows/columns of the distance matrix, which is not desired.
-We also manually specify a blue color palette using the
-*colorRampPalette* function from the `r CRANpkg("RColorBrewer")` package.
+为了绘制行或列按照距离排列的样本距离矩阵，我们手动地给 *pheatmap* 函数的
+ `clustering_distance` 参数提供 `sampleDists`。
+否则 *pheatmap* 会假设矩阵包含数据值本身，并且会计算距离矩阵行/列之间的距离，这不是
+我们所期望的。
+我们也会手动的用 `r CRANpkg("RColorBrewer")` 包中的 *colorRampPalette* 函数来
+指定一个蓝色的调色板。
 
 ```{r distheatmap, fig.width = 6.1, fig.height = 4.5}
 sampleDistMatrix <- as.matrix( sampleDists )
@@ -974,28 +758,23 @@ pheatmap(sampleDistMatrix,
          col = colors)
 ```
 
-**Heatmap of sample-to-sample distances using the rlog-transformed values.**
+**使用了rlog转换值的样本间距离热图**
 
-Note that we have changed the row names of the distance matrix to
-contain treatment type and patient number instead of sample ID, so
-that we have all this information in view when looking at the heatmap.
+注意我们已经改变了距离矩阵中的行名，现在的行名是处理类型-病人的编号，
+这样我们就能在看热图时看到所有的这些信息。
 
-Another option for calculating sample distances is to use the
-*Poisson Distance* [@Witten2011Classification], implemented in the
-`r CRANpkg("PoiClaClu")` package.
-This measure of dissimilarity between counts
-also takes the inherent variance
-structure of counts into consideration when calculating the distances
-between samples. The *PoissonDistance* function takes the original
-count matrix (not normalized) with samples as rows instead of columns,
-so we need to transpose the counts in `dds`.
+另一个计算样本距离的选择是使用 *Poisson Distance* [@Witten2011Classification]，
+由 `r CRANpkg("PoiClaClu")` 包来执行。
+在计算样本距离时，这种计数值之间的不相同的度量也考虑了计数值的内部方差结构。 
+*PoissonDistance* 函数使用原始计数矩阵（未标准化），要求每个样本作为一行而不是一列，
+所以我们需要调换 `dds` 中的计数值。
 
 ```{r}
 library("PoiClaClu")
 poisd <- PoissonDistance(t(counts(dds)))
 ```
 
-We plot the heatmap in a Figure below.
+下图是最终绘制的热图。
 
 ```{r poisdistheatmap, fig.width = 6.1, fig.height = 4.5}
 samplePoisDistMatrix <- as.matrix( poisd$dd )
@@ -1007,41 +786,28 @@ pheatmap(samplePoisDistMatrix,
          col = colors)
 ```
 
-**Heatmap of sample-to-sample distances using the *Poisson Distance*.**
+**使用了 *Poisson Distance* 距离的样本间距离的热图。**
 
-## PCA plot
+## PCA 图
 
-Another way to visualize sample-to-sample distances is a
-principal components analysis (PCA). In this ordination method, the
-data points (here, the samples) are projected onto the 2D plane
-such that they spread out in the two directions that explain most of
-the differences (figure below). The x-axis is the direction that separates the data
-points the most. The values of the samples in this direction are
-written *PC1*. The y-axis is a direction (it must be *orthogonal* to
-the first direction) that separates the data the second most. The
-values of the samples in this direction are written *PC2*.
-The percent of the total variance that is contained in the direction
-is printed in the axis label. Note that these percentages do not add to
-100%, because there are more dimensions that contain the remaining
-variance (although each of these remaining dimensions will explain
-less than the two that we see). 
+另一种可视化样本到样本距离的方式是主成分分析（PCA）。在这种方法中，数据点(这里指样本）
+映射到 2 维度、平面，他们分散在两个方向上，这两个方向能解释大多数的差异（下图所示）。
+X轴是数据点差异最大的方向。这个方向的样本的值记为 *PC1* 。y轴是数据点差异第二大方向
+（必须和第一个方向呈*直角*）。这个方向的样本的值记为 *PC2*。
+每个方向的总体方差的百分数写在坐标轴标签中。注意这个百分比相加不等于 100%，因为还有更多的
+维度中包含有剩下的差异。（虽然这些维度的差异占比非常小）。
 
 ```{r plotpca, fig.width=6, fig.height=4.5}
 plotPCA(vsd, intgroup = c("dex", "cell"))
 ```
 
-**PCA plot using the VST data.** Each unique combination of
-treatment and cell line is given its own color.
+**使用了 VST 数据的 PCA 图。** 不同的颜色表示不同处理和细胞系的组合。
 
-Here, we have used the function *plotPCA* that comes with *DESeq2*.
-The two terms specified by `intgroup` are the interesting groups for
-labeling the samples; they tell the function to use them to choose
-colors. We can also build the PCA plot from scratch using the
-`r CRANpkg("ggplot2")` package [@Wickham2009Ggplot2].
-This is done by asking the *plotPCA* function
-to return the data used for plotting rather than building the plot.
-See the *ggplot2* [documentation](http://docs.ggplot2.org/current/)
-for more details on using *ggplot*.
+我们在这使用了 *DESeq2* 的 *plotPCA* 函数。由 `intgroup` 指定的两个参数是我们
+想区分样本的两个组别。它们告诉函数根据它们来选择颜色。我们也能用
+ `r CRANpkg("ggplot2")`[@Wickham2009Ggplot2] 包从头绘制 PCA 图。
+这是通过让 *plotPCA* 函数返回用于画图的数据而不是直接作图来实现的。
+关于 *ggplot* 函数的更多细节请参考 *ggplot2* [documentation](http://docs.ggplot2.org/current/)。
 
 ```{r}
 pcaData <- plotPCA(vsd, intgroup = c( "dex", "cell"), returnData = TRUE)
@@ -1049,9 +815,8 @@ pcaData
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ```
 
-We can then use these data to build up a second plot in a figure below, specifying that the
-color of the points should reflect dexamethasone treatment and the
-shape should reflect the cell line.
+之后我们可以用这些数据来绘制第二张图，如下图所示，图中点的颜色对应地塞米松处理，点的形状
+对应细胞系。
 
 ```{r ggplotpca, fig.width=6, fig.height=4.5}
 ggplot(pcaData, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
@@ -1061,24 +826,19 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
   coord_fixed()
 ```
 
-**PCA plot using the VST values with custom *ggplot2* code.**
-Here we specify cell line (plotting symbol) and dexamethasone treatment (color).
+**用自定义的 *ggplot2* 代码画的 VST 值的 PCA 图**
+这里我们指定了细胞系（形状）和地塞米松处理（颜色）。
 
-From the PCA plot, we see that the differences between cells (the
-different plotting shapes) are considerable, though not stronger than the differences due to
-treatment with dexamethasone (red vs blue color). This shows why it will be important to
-account for this in differential testing by using a paired design
-("paired", because each dex treated sample is paired with one
-untreated sample from the *same* cell line). We are already set up for
-this design by assigning the formula `~ cell + dex` earlier.
+从PCA图中，我们看出不同细胞之间的差异是相当大的（不同的形状），但是地塞米松治疗的
+差异更大（红色 VS 蓝色）。这展示了为什么在不同的检验要用这种成对的设计来解释这个
+的重要性（“paired”，即在*相同*细胞系中每个地塞米松治疗样本都有一个对应的
+未治疗的样本）。之前我们已经通过设计公式 `~ cell + dex` 来建立了这种设计。
 
-## MDS plot
+## MDS 图
 
-Another plot, very similar to the PCA plot, can be made using the 
-*multidimensional scaling* (MDS) function in base R. This is useful when we
-don't have a matrix of data, but only a matrix of distances. Here we
-compute the MDS for the distances calculated from the *VST* data
-and plot these in a figure below.
+另一个和 PCA 图很相似的图，可以用基于 R 的 *multidimensional scaling* (MDS) 
+函数来绘制。当我们没有数据矩阵，只有距离矩阵时，这个图会很有用。这里我们分析了用 *VST* 
+数据计算出的距离上的 MDS，并画成了下图。
 
 ```{r mdsrlog, fig.width=6, fig.height=4.5}
 mds <- as.data.frame(colData(vsd))  %>%
@@ -1087,9 +847,9 @@ ggplot(mds, aes(x = `1`, y = `2`, color = dex, shape = cell)) +
   geom_point(size = 3) + coord_fixed()
 ```
 
-**MDS plot using VST data.**
+**用 VST 数据画的 MDS 图。**
 
-In a figure below we show the same plot for the *PoissonDistance*:
+在下面的这张图中我们展示了用 *PoissonDistance* 画的同样的图。
 
 ```{r mdspois, fig.width=6, fig.height=4.5}
 mdsPois <- as.data.frame(colData(dds)) %>%
@@ -1098,231 +858,167 @@ ggplot(mdsPois, aes(x = `1`, y = `2`, color = dex, shape = cell)) +
   geom_point(size = 3) + coord_fixed()
 ```
 
-**MDS plot using the *Poisson Distance*.**
+**用 *PoissonDistance* 画的 MDS 图**
 
 <a id="de"></a>
 
-# Differential expression analysis
+# 差异表达分析
 
-## Running the differential expression pipeline
+## 启动差异表达分析的流程
 
-As we have already specified an experimental design when we created
-the *DESeqDataSet*, we can run the differential expression pipeline on
-the raw counts with a single call to the function *DESeq*:
+因为我们早在创建 *DESeqDataSet* 时就指定了实验设计，所以现在简单的调用 *DESeq* 函数
+就可以运行差异表达分析的流程：
 
 ```{r airwayDE}
 dds <- DESeq(dds)
 ```
 
-This function will print out a message for the various steps it
-performs. These are described in more detail in the manual page for
-*DESeq*, which can be accessed by typing `?DESeq`. Briefly these are:
-the estimation of size factors (controlling for differences in the
-sequencing depth of the samples), the estimation of
-dispersion values for each gene, and fitting a generalized linear model.
+这个函数会打印出它执行的各个步骤的信息。更多细节可以查看手册上有关 *DESeq* 的页面，
+您可以通过 `?DESeq` 来访问。这些步骤主要是：尺寸因子的估算（样本测序深度的差异控制），
+每个基因的离散值的估算，以及拟合广义线性模型。
 
-A *DESeqDataSet* is returned that contains all the fitted
-parameters within it, and the following section describes how to
-extract out results tables of interest from this object.
+该过程返回一个 *DESeqDataSet* 对象，其中包含所有的拟合参数，下面的部分描述了如何从该对象
+中提取出感兴趣的结果表格。
 
-## Building the results table
+## 建立结果表格
 
-Calling *results* without any arguments will extract the estimated
-log2 fold changes and *p* values for the last variable in the design
-formula. If there are more than 2 levels for this variable, *results*
-will extract the results table for a comparison of the last level over
-the first level. The comparison is printed at the top of the output:
-`dex trt vs untrt`.
+不带参数的调用 *results* 会生成设计公式中的最后一个变量的估计的 log2 倍数变化值
+以及 *p* 值。如果这个变量有超过 2 个水平，那么 *results* 函数会生成一个结果表格以比较
+最后一个水平和最前一个水平，其会在输出的顶部打印出来：`dex trt vs untrt` 。
 
 ```{r}
 res <- results(dds)
 res
 ```
 
-We could have equivalently produced this results table with the
-following more specific command. Because `dex` is the last variable in
-the design, we could optionally leave off the `contrast` argument to extract
-the comparison of the two levels of `dex`.
+我们可以使用以下更具体的命令等效地生成此结果表。由于 `dex` 是设计的最后一个变量，我们可以
+选择省略 `contrast` 来生成 `dex` 的两个水平的比较。
 
 ```{r}
 res <- results(dds, contrast=c("dex","trt","untrt"))
 ```
 
-As `res` is a *DataFrame* object, it carries metadata
-with information on the meaning of the columns:
+因为 `res` 是一个 *DataFrame* 对象，所以它的列名的含义就是它的 meta 数据。
 
 ```{r}
 mcols(res, use.names = TRUE)
 ```
 
-The first column, `baseMean`, is a just the average of the normalized
-count values, divided by the size factors, taken over all samples in the
-*DESeqDataSet*.
-The remaining four columns refer to a specific contrast, namely the
-comparison of the `trt` level over the `untrt` level for the factor
-variable `dex`. We will find out below how to obtain other contrasts.
+第一列， `baseMean` 是归一化的计数值的平均值, 由尺寸因子划分开，取自 *DESeqDataSet*
+的所有样本。
+其他四列指特定的对比，即因子变量 `dex` 的 `trt` 水平与 `untrt` 的对比。下面我们会
+阐明如何获得其他的对比。
 
-The column `log2FoldChange` is the effect size estimate. It tells us
-how much the gene's expression seems to have changed due to treatment
-with dexamethasone in comparison to untreated samples.  This value is
-reported on a logarithmic scale to base 2: for example, a log2 fold
-change of 1.5 means that the gene's expression is increased by a
-multiplicative factor of \(2^{1.5} \approx 2.82\).
+`log2FoldChange` 列是效应值估计。它是指地塞米松治疗样本与不治疗样本对比，有多少基因
+表达改变了。这个值是一个以 2 为底的 log 值：例如，log2 倍数变化为1.5 的意思是基因
+表达增加了 \(2^{1.5} \约为 2.82\)倍。
 
-Of course, this estimate has an uncertainty associated with it, which
-is available in the column `lfcSE`, the standard error estimate for
-the log2 fold change estimate.  We can also express the uncertainty of
-a particular effect size estimate as the result of a statistical
-test. The purpose of a test for differential expression is to test
-whether the data provides sufficient evidence to conclude that this
-value is really different from zero. *DESeq2* performs for each gene a
-*hypothesis test* to see whether evidence is sufficient to decide
-against the *null hypothesis* that there is zero effect of the treatment
-on the gene and that the observed difference between treatment and
-control was merely caused by experimental variability (i.e., the type
-of variability that you can expect between different
-samples in the same treatment group). As usual in statistics, the
-result of this test is reported as a *p* value, and it is found in the
-column `pvalue`. Remember that a *p* value indicates the probability
-that a fold change as strong as the observed one, or even stronger,
-would be seen under the situation described by the null hypothesis.
+当然，这个估计值有不确定性，这个不确定性在 `lfcSE` 列中表示，该列是 log2 倍数变化
+的标准差估计。作为统计检验的结果，我们还可以表示特定效应大小估计的不确定性。对差异表达进行
+检验的目的是确定数据是否有足够的证据证明值与 0 有差异。*DESeq2* 为每个基因执行*假设检验*
+以确定是否有足够证据来推翻*无效假设*，这个无效假设是指治疗对基因是没有影响的，现在观察
+到的治疗组与对照组之间的差异只是实验的随机误差造成的。（即在同一个治疗组里你可以预期的不同样本间的
+变异性的类型）。通常在统计中，这种检验的结果是用 *p* 值来表示的，即实验组与对照组的倍数变化没有差别甚至对照组更强的可能性，将在无效假设描述的情况下看到。
 
-We can also summarize the results with the following line of code,
-which reports some additional information, that will be covered in
-later sections.
+我们还可以使用以下代码行汇总结果，这些代码会报告一些其他信息，这些信息将在后面的章节中介绍。
 
 ```{r}
 summary(res)
 ```
 
-Note that there are many genes with differential expression due to
-dexamethasone treatment at the FDR level of 10%. This makes sense, as
-the smooth muscle cells of the airway are known to react to
-glucocorticoid steroids. However, there are two ways to be more strict
-about which set of genes are considered significant:
+注意在 FDR 水平为 10% 的情况下，地塞米松处理组的许多基因出现差异表达。这是说得通的，
+因为已知呼吸道的平滑肌细胞会与糖皮质激素起反应。然而，有两种方法更严格的确定哪些基因是
+更加有意义的：
 
-* lower the false discovery rate threshold (the threshold on `padj` in
-  the results table)
-* raise the log2 fold change threshold from 0 using the `lfcThreshold`
-  argument of *results*
+* 降低错误发现率的阈值 (即结果表中 `padj` 的阈值)
+* 用 *results* 的 `lfcThreshold` 参数来从 0 提高log2倍数变化的阈值
 
-If we lower the false discovery rate threshold, we should also
-inform the `results()` function about it, so that the function can use this 
-threshold for the optimal independent filtering that it performs:
+如果我们降低错误发现率的阈值，我们也要将其报给 `results()` 函数，这样该函数就能用这个阈值来
+进行最佳的独立性过滤：
 
 ```{r}
 res.05 <- results(dds, alpha = 0.05)
 table(res.05$padj < 0.05)
 ```
 
-If we want to raise the log2 fold change threshold, so that we test
-for genes that show more substantial changes due to treatment, we
-simply supply a value on the log2 scale. For example, by specifying
-`lfcThreshold = 1`, we test for genes that show significant effects of
-treatment on gene counts more than doubling or less than halving,
-because \(2^1 = 2\).
+如果我们想提高 log2 倍数变化的阈值，以检验出那些在处理中变化较大的基因，我们可以简单的给 
+log2 尺度添加一个值。例如，通过指定 `lfcThreshold = 1` ，我们会检验出那些在治疗中差异表达
+增加 2 倍以上或者降低到一半以下的基因，因为 \(2^1 = 2\)。
 
 ```{r}
 resLFC1 <- results(dds, lfcThreshold=1)
 table(resLFC1$padj < 0.1)
 ```
 
-Sometimes a subset of the *p* values in `res` will be `NA` ("not
-available"). This is *DESeq*'s way of reporting that all counts for
-this gene were zero, and hence no test was applied. In addition, *p*
-values can be assigned `NA` if the gene was excluded from analysis
-because it contained an extreme count outlier. For more information,
-see the outlier detection section of the *DESeq2* vignette.
+有时候 `res` 中的有些 *p* 值是 `NA` （没有得到）。这是 *DESeq* 中报告这个基因的所有
+计数值都是 0 的方式，因此不会应用任何检验。 此外，如果基因由于包含一个极端的异常值而被剔除出分
+析，那么 *p* 值也会是 `NA` 。更多信息请参考 *DESeq2* 简介中有关异常值检测的部分。
 
-If you use the results from an R analysis package in published
-research, you can find the proper citation for the software by typing
-`citation("pkgName")`, where you would substitute the name of the
-package for `pkgName`.  Citing methods papers helps to support and
-reward the individuals who put time into open source software for
-genomic data analysis.
+如果你将 R 包分析的结果用在公开的研究中，你可以通过键入`citation("pkgName")` 来找到
+这个包的特定引用格式，你要用包的名字来替换 `pkgName`。在你的 paper 中注明对这些包的引用
+会极大的鼓励那些开发这些开源的基因组数据分析软件的人，毕竟他们在这些软件上花费了大量的时间。
 
-## Other comparisons
+## 其他比较
 
-In general, the results for a comparison of any two levels of a
-variable can be extracted using the `contrast` argument to
-*results*. The user should specify three values: the name of the
-variable, the name of the level for the numerator, and the name of the
-level for the denominator. Here we extract results for the log2 of the
-fold change of one cell line over another:
+总之，一个变量的任何两个水平之间的比较结果可以用 *results* 的 `contrast` 参数提取到。
+用户要指定3个值：变量的名字，分子上的水平的名字以及分母上的水平的名字。这里我们提取了两个
+细胞系之间的log2倍数变化的结果：
 
 ```{r}
 results(dds, contrast = c("cell", "N061011", "N61311"))
 ```
 
-There are additional ways to build results tables for certain
-comparisons after running *DESeq* once.
-If results for an interaction term are desired, the `name`
-argument of *results* should be used. Please see the 
-help page for the *results* function for details on the additional
-ways to build results tables. In particular, the **Examples** section of
-the help page for *results* gives some pertinent examples.
+在运行了 *DESeq* 一次后，还有一些其他的方法来为某些比较建立结果表格。
+如果需要交互项的结果，那么要使用 *results* 的 `name` 参数。请参考 *results* 
+函数的帮助页面以获取更多有关用其他方式来建立结果表格的详细信息。尤其是 *results* 
+帮助页面的 **Examples** 部分给出了几个很有用的例子。
 
-## Multiple testing
+## 多重检验
 
-In high-throughput biology, we are careful to not use the *p* values
-directly as evidence against the null, but to correct for
-*multiple testing*. What would happen if we were to simply threshold
-the *p* values at a low value, say 0.05? There are
-`r sum(res$pvalue < .05, na.rm=TRUE)` genes with a *p* value
-below 0.05 among the `r sum(!is.na(res$pvalue))` genes for which the
-test succeeded in reporting a *p* value:
+在高通量生物学中，我们不要急着直接用 *p* 值来否定无效假设，而要用 *多重检验*
+来进行校正。如果我们简单地将 *p* 值的临界值设定为一个比较低的值会怎样，比如0.05？
+那么对于该检验中成功反馈的 `r sum(!is.na(res$pvalue))` 个基因，有 
+`r sum(res$pvalue < .05, na.rm=TRUE)` 个基因的 *p* 小于0.05。
 
 ```{r sumres}
 sum(res$pvalue < 0.05, na.rm=TRUE)
 sum(!is.na(res$pvalue))
 ```
 
-Now, assume for a moment that the null hypothesis is true for all
-genes, i.e., no gene is affected by the treatment with
-dexamethasone. Then, by the definition of the *p* value, we expect up to
-5% of the genes to have a *p* value below 0.05. This amounts to
-`r round(sum(!is.na(res$pvalue)) * .05 )` genes.
-If we just considered the list of genes with a *p* value below 0.05 as
-differentially expressed, this list should therefore be expected to
-contain up to
+现在，假设对所有基因来说，无效假设都是对的，即没有基因受到了地塞米松处理的影响。
+那么，基于 *p* 值的定义，我们期望在所有的基因中有 5% 的基因的 *p* 值低于 0.05。
+这总共是 `r round(sum(!is.na(res$pvalue)) * .05 )` 个基因。
+如果我们认为 *p* 值低于0.05的这一基因列表是差异表达的，那么该列表应该包含多达
 `r round(sum(!is.na(res$pvalue)) * .05)` /
 `r sum(res$pvalue < .05, na.rm=TRUE)` =
 `r round(sum(!is.na(res$pvalue))*.05 / sum(res$pvalue < .05, na.rm=TRUE) * 100)`%
- false positives.
+ 个基因是假阳性的。
 
-*DESeq2* uses the Benjamini-Hochberg (BH) adjustment [@Benjamini1995Controlling] as implemented in
-the base R *p.adjust* function; in brief, this method calculates for
-each gene an adjusted *p* value that answers the following question:
-if one called significant all genes with an adjusted *p* value less than or
-equal to this gene's adjusted *p* value threshold, what would be the fraction
-of false positives (the *false discovery rate*, FDR) among them, in
-the sense of the calculation outlined above? These values, called the
-BH-adjusted *p* values, are given in the column `padj` of the `res`
-object.
+*DESeq2* 用 R 的基础函数 *p.adjust* 来执行 Benjamini-Hochberg (BH) 校正
+[@Benjamini1995Controlling]。这个方法简单来说就是，为每个基因计算一个校正后的 *p* 
+值，该值回答了以下问题：如果一个经检验为显著的基因，它的校正后 *p* 值小于等于这个基因
+的校正后 *p* 值的阈值，那么在此意义上，所有的显著性基因假阳性率（ *错误发现率*, FDR）
+是多少？这个值被叫做 BH 调整 *p* 值，在 `res` 对象的 `padj` 列中给出。
 
-The FDR is a useful statistic for many high-throughput
-experiments, as we are often interested in reporting or focusing on a
-set of interesting genes, and we would like to put an upper bound on the
-percent of false positives in this set. 
+FDR 在很多的高通量实验的统计中都很有用，因为我们通常只关注感兴趣的基因，
+所以希望能够给这些基因中的假阳性率设置一个上限。
 
-Hence, if we consider a fraction of 10% false positives acceptable,
-we can consider all genes with an adjusted *p* value below 10% = 0.1
-as significant. How many such genes are there?
+因此，如果我们觉得 10% 的假阳性率是可以接受的，那么我们认为所有的校正后的 *p* 值小于 0.1
+的基因都是显著的。这样的基因有多少呢？
 
 ```{r}
 sum(res$padj < 0.1, na.rm=TRUE)
 ```
 
-We subset the results table to these genes and then sort it by the
-log2 fold change estimate to get the significant genes with the
-strongest down-regulation:
+我们对结果表格中的这些基因取子集，然后按照 log2 倍数变化值进行排序，从而获得下调得最多
+的显著基因：
 
 ```{r}
 resSig <- subset(res, padj < 0.1)
 head(resSig[ order(resSig$log2FoldChange), ])
 ```
 
-...and with the strongest up-regulation:
+...以及上调最多的基因:
 
 ```{r}
 head(resSig[ order(resSig$log2FoldChange, decreasing = TRUE), ])
@@ -1330,24 +1026,21 @@ head(resSig[ order(resSig$log2FoldChange, decreasing = TRUE), ])
 
 <a id="plots"></a>
 
-# Plotting results
+# 结果绘图
 
-## Counts plot
+## 计数值绘图
 
-A quick way to visualize the counts for a particular gene is to use
-the *plotCounts* function that takes as arguments the
-*DESeqDataSet*, a gene name, and the group over which to plot the
-counts (figure below).
+要可视化地展示一个特定基因的计数值，最快的方法是用 *plotCounts* 函数，该函数需要
+以下参数：*DESeqDataSet*对象，基因名，以及要画图的那一组。（下图）
 
 ```{r plotcounts}
 topGene <- rownames(res)[which.min(res$padj)]
 plotCounts(dds, gene = topGene, intgroup=c("dex"))
 ```
 
-**Normalized counts for a single gene over treatment group.**
+**基于处理组的单个基因的标准化计数值。**
 
-We can also make custom plots using the *ggplot* function from the
-`r CRANpkg("ggplot2")` package (figures below).
+我们也可以用 `r CRANpkg("ggplot2")` 包的 *ggplot* 函数来定制图（下图）。
 
 ```{r ggplotcountsjitter, fig.width = 4, fig.height = 3}
 library("ggbeeswarm")
@@ -1362,30 +1055,20 @@ ggplot(geneCounts, aes(x = dex, y = count, color = cell, group = cell)) +
   scale_y_log10() + geom_point(size = 3) + geom_line()
 ```
 
-**Normalized counts with lines connecting cell lines.**
-Note that the *DESeq* test actually takes into account the cell line
-effect, so this figure more closely depicts the difference being tested.
+**将细胞系用线连起来的标准化计数值.**
+注意 *DESeq* 检验实际上考虑到了细胞系的影响，所以这个图更准确的描绘了检验的差异。
 
-## MA-plot
+## MA 图
 
-An *MA-plot* [@Dudoit2002Statistical] provides a useful overview for
-the distribution of the estimated coefficients in the model,
-e.g. the comparisons of interest, across all genes.
-On the y-axis, the "M" stands for "minus" --
-subtraction of log values is equivalent to the log of the ratio -- and
-on the x-axis, the "A" stands for "average". You may hear this plot
-also referred to as a mean-difference plot, or a Bland-Altman plot.
+ *MA-plot* 展示了一个针对模型评估系数分布情况的概览，例如，在全部基因的尺度上对我们感兴趣的
+变量进行比较， 在 Y 轴上，"M" 代表 "minus"，
+在X轴上，"A" 代表 "average"，此图也称为为均值差异图或者 Bland-Altman 图。
 
-Before making the MA-plot, we use the
-*lfcShrink* function to shrink the log2 fold changes for the
-comparison of dex treated vs untreated samples.
-There are three types of shrinkage estimators in *DESeq2*, which are covered in the
-[DESeq2 vignette](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html).
-Here we specify the *apeglm* method for shrinking coefficients, which
-is good for shrinking the noisy LFC estimates while giving low bias
-LFC estimates for true large differences [@Zhu2018]. To use *apeglm* we specify a
-coefficient from the model to shrink, either by name or number as the
-coefficient appears in `resultsNames(dds)`. 
+在绘制 MA 图之前，我们用 *lfcShrink* 函数来缩减地塞米松治疗样本和未治疗样本之间的 
+log2 倍数差异范围。 *DESeq2* 中有 3 种缩减方法，详见 [DESeq2 指南](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html)。
+这里我们使用 *apeglm* 方法，该方法通过为差异很大的基因给出一个低偏差的 LFC 估计值来很好地
+缩减杂乱的 LFC 估计值。通过用 *apeglm* 我们给缩减指定了一个模型系数，可以用方法的名字或者
+该方法在 `resultsNames(dds)` 中的序号来调用该方法。
 
 ```{r plotma}
 library("apeglm")
@@ -1394,39 +1077,30 @@ res <- lfcShrink(dds, coef="dex_trt_vs_untrt", type="apeglm")
 plotMA(res, ylim = c(-5, 5))
 ```
 
-If it is necessary to specify a contrast not represented in
-`resultsNames(dds)`, either of the other two shrinkage methods can be used,
-or in some cases, re-factoring the relevant variables and running
-`nbinomWaldTest` followed by `lfcShrink` is sufficient. See the DESeq2
-vignette for more details.
+如果要指定 `resultsNames(dds)` 中没有的比较，可以用另外两种收缩方法，
+或者在某些情况下，重构相关的变量，然后运行 `nbinomWaldTest` 再运行 `lfcShrink` 
+就可以了。更多细节请参考 DESeq2 指南。
 
-**An MA-plot of changes induced by treatment.**
-The log2 fold change for a particular
-comparison is plotted on the y-axis and the average of the counts
-normalized by size factor is shown on the x-axis.
-Each gene is represented with a dot. Genes with an adjusted *p* value
-below a threshold (here 0.1, the default) are shown in red.
+**由实验处理导致变化的 MA 图。**
+Y 轴是特定比较间的 log2 倍数变化值，X 轴是经过了尺寸因子标准化后的计数值的均值。
+每个点代表一个基因。校正后的 *p* 值小于阈值（这里是0.1，默认的）的基因用红色表示。
 
-The *DESeq2* package uses a Bayesian procedure to moderate (or
-"shrink") log2 fold changes from genes with very low counts and highly
-variable counts, as can be seen by the narrowing of the vertical
-spread of points on the left side of the MA-plot. As shown above, the
-*lfcShrink* function performs this operation.  For a detailed
-explanation of the rationale of moderated fold changes, please see the
-*DESeq2* paper [@Love2014Moderated].
 
-If we had not used statistical moderation to shrink the noisy log2
-fold changes, we would have instead seen the following plot:
+ *DESeq2* 包使用贝叶斯方法来缓和（或者说“缩减”）那些计数值极低而计数值的变化又非常
+ 大的基因的 log2 倍数变化。这在 MA 图中也能看出来，图中左侧的点在垂直方向上的分布范围被
+ 收窄了。如上所示， 我们用 *lfcShrink* 函数执行这个操作。
+ 关于缩减倍数变化原理的更详细解释，请参见 *DESeq2* 的文献[@Love2014Moderated]。
+
+如果我们没有用统计调节来缩减嘈杂的log2倍数变化，我们可能会看到下图：
 
 ```{r plotmaNoShr}
 res.noshr <- results(dds, name="dex_trt_vs_untrt")
 plotMA(res.noshr, ylim = c(-5, 5))
 ```
 
-We can label individual points on the MA-plot as well. Here we use the
-*with* R function to plot a circle and text for a selected row of the
-results object. Within the *with* function, only the `baseMean` and
-`log2FoldChange` values for the selected rows of `res` are used.
+我们也可以给 MA 图上的点打上标签。这里我们使用了 R 函数 *with* 来给结果对象中的选定行
+画上圈并写上文字。在 *with* 函数中， `res` 的选定行中只有 `baseMean` 和 
+`log2FoldChange` 值会被用到。
 
 ```{r plotmalabel}
 plotMA(res, ylim = c(-5,5))
@@ -1436,39 +1110,31 @@ with(res[topGene, ], {
   text(baseMean, log2FoldChange, topGene, pos=2, col="dodgerblue")
 })
 ```
-
-Another useful diagnostic plot is the histogram of the *p* values
-(figure below). This plot is best formed by excluding genes with very
-small counts, which otherwise generate spikes in the histogram.
+另一个很有用的图是 *p* 值的直方图（下图）。最好在此图中去掉极小计数值的基因，
+否则会在直方图中产生峰值。
 
 ```{r histpvalue2}
 hist(res$pvalue[res$baseMean > 1], breaks = 0:20/20,
      col = "grey50", border = "white")
 ```
 
-**Histogram of *p* values for genes with mean normalized count larger than 1.**
+**标准化计数值大于 1 的基因的 *p* 值直方图**
 
-## Gene clustering
+## 基因聚类
 
-In the sample distance heatmap made previously, the dendrogram at the
-side shows us a hierarchical clustering of the samples. Such a
-clustering can also be performed for the genes.  Since the clustering
-is only relevant for genes that actually carry a signal, one usually
-would only cluster a subset of the most highly variable genes. Here,
-for demonstration, let us select the 20 genes with the highest
-variance across samples. We will work with the VST data.
+在前面绘制的样本距离热图中，边上的系统发育树展示了样本的分层聚类。这样的聚类也可以用在
+基因上。由于聚类只与实际携带信号的基因有关，因此通常只聚类变化性最大的那些基因。这里，
+作为演示，我们选取了跨样本的 20 个变化最大的基因。使用的是 VST 数据。
 
 ```{r}
 library("genefilter")
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
 ```
 
-The heatmap becomes more interesting if we do not look at absolute
-expression strength but rather at the amount by which each gene
-deviates in a specific sample from the gene's average across all
-samples. Hence, we center each genes' values across samples,
-and plot a heatmap (figure below). We provide a *data.frame* that instructs the
-*pheatmap* function how to label the columns.
+如果我们不考虑样本的绝对表达强度，而是考虑相对于基因在所有样本中的平均表达量，该基因在特定
+样本中表达量的偏差值，那么热图会变得更有趣。因此，我们将基因表达量相近的样本聚在一起，绘制
+了如下热图。
+我们手动提供了 *data.frame* 来指导 *pheatmap* 函数如何给每一列打标签。
 
 ```{r genescluster}
 mat  <- assay(vsd)[ topVarGenes, ]
@@ -1477,31 +1143,21 @@ anno <- as.data.frame(colData(vsd)[, c("cell","dex")])
 pheatmap(mat, annotation_col = anno)
 ```
 
-**Heatmap of relative VST-transformed values across samples.**
-Treatment status and cell line information are shown with colored bars
-at the top of the heatmap.
-Blocks of genes that covary across patients. Note that
-a set of genes at the top of the heatmap are separating the N061011
-cell line from the others. In the center of the heatmap, we see a set
-of genes for which the dexamethasone treated samples have higher gene
-expression. 
+**样本间 VST 转换值相关性热图**
+药物处理情况和细胞系信息通过热图顶部的彩色条显示。基因的色块随着样本的变化而变化。
+注意热图顶部的那一组基因，它们将将 N061011 细胞系和其他细胞系分开了。在热图的中间
+的一组基因，在地塞米松处理的样本中表达量更高。
 
-## Independent filtering
+##独立性检验
 
-The MA plot highlights an important property of RNA-seq data.  For
-weakly expressed genes, we have no chance of seeing differential
-expression, because the low read counts suffer from such high Poisson
-noise that any biological effect is drowned in the uncertainties from
-the sampling at a low rate. We can also show this by examining the ratio of
-small *p* values (say, less than 0.05) for genes binned by mean
-normalized count. We will use the results table subjected to the threshold to show
-what this looks like in a case when there are few tests with small *p*
-value.
+MA 图展示出了 RNA-seq 数据的一个重要特征。对于微弱表达的基因，我们很难观察其差异表达情况，
+因为如此低的 reads 计数值会伴随非常高的泊松噪声，以至于任何的生物学特征都会淹没在在低采样率的
+不确定性中。在用标准化后的平均计数值来检测小 *p* 值（如 0.05）的比例时，这个问题也会暴露出来。
+我们会利用阈值控制下的结果列表来展示在较小 *p* 值假设检验的情况下看起来是什么样的。
 
-In the following code chunk, we create bins using the *quantile*
-function, bin the genes by base mean using *cut*, rename the levels of
-the bins using the middle point, calculate the ratio of *p* values
-less than 0.05 for each bin, and finally plot these ratios (figure below).
+在下面的代码块中，我们用 *quantile* 生成了一个容器，使用 *cut* 通过基本均值来
+封装基因，用中点重命名容器的水平，计算每个容器 *p* 值小于 0.05 的比率，最后画出这
+些比率（下图）。
 
 ```{r sensitivityovermean, fig.width=6}
 qs <- c(0, quantile(resLFC1$baseMean[resLFC1$baseMean > 0], 0:6/6))
@@ -1513,70 +1169,50 @@ barplot(fractionSig, xlab = "mean normalized count",
                      ylab = "fraction of small p values")
 ```
 
-**The ratio of small *p* values for genes binned by mean normalized count.**
-The *p* values are from a test of log2 fold change greater than 1
-or less than -1. This plot demonstrates that genes with very low mean count
-have little or no power, and are best excluded from testing.
+**经过标准化后基因的平均计数值的小 *p* 值的比例。**
+ *p* 值来源于一个 log2 倍数变化大于 1 或小于 1 的检验。这个图表明，平均计数值非常低的
+基因没有或有很少的效能，最好从检验中排除。
 
-At first sight, there may seem to be little benefit in filtering out
-these genes. After all, the test found them to be non-significant
-anyway. However, these genes have an influence on the multiple testing
-adjustment, whose performance improves if such genes are removed. By
-removing the low count genes from the input to the FDR
-procedure, we can find more genes to be significant among those that
-we keep, and so improved the power of our test. This approach is known
-as *independent filtering*.
+初看之下，过滤这些基因似乎没有什么好处。毕竟，检验也会发现它们没有显著性。然而，这些基因会
+对多重检验校正有影响，如果过滤这些基因，检验的效果会提高。在 FDR 程序中的输入中移除
+低计数值的基因，我们能在我们保留的基因中发现更多的基因有显著性，从而能提高检验的效能。该途径用
+*独立性过滤* 实现。
 
-The *DESeq2* software automatically performs independent filtering
-that maximizes the number of genes with adjusted *p* value
-less than a critical value (by default, `alpha` is set to 0.1).  This
-automatic independent filtering is performed by, and can be controlled
-by, the *results* function.
+ *DESeq2* 软件自动执行独立性过滤，即最大化调整 *p* 值小于临界值的基因
+（默认的 `alpha`是0.01）。这个自动的独立性过滤是通过 *results* 
+来执行和控制的。
 
-The term *independent* highlights an important caveat. Such filtering
-is permissible only if the statistic that we filter on (here the mean
-of normalized counts across all samples) is independent of the
-actual test statistic (the *p* value) under the null hypothesis.
-Otherwise, the filtering would invalidate the
-test and consequently the assumptions of the BH procedure.
-The independent filtering software used inside
-*DESeq2* comes from the `r Biocpkg("genefilter")` package, that
-contains a reference to a paper describing the statistical foundation
-for independent filtering [@Bourgon2010Independent].
+*independent* 这个术语强调了一个重要的警告。只有当我们过滤的统计量（这里是所有样本的
+标准化计数值的均值）不依赖于无效假设下的实际检验的统计量（ *p* 值），这种过滤才是被
+允许的。否则，过滤会导致检验无效，最终导致 BH 过程的假设无效。
+独立性过滤软件使用 `r Biocpkg("genefilter")` 包中的 *DESeq2* ，
+其中包含一个描述独立性过滤的统计学基础的参考文献 [@Bourgon2010Independent]。
 
 <a id="annotate"></a>
 
-# Annotating and exporting results
+# 注释及结果导出
 
-Our result table so far only contains the Ensembl gene
-IDs, but alternative gene names may be more informative for
-interpretation.  Bioconductor's annotation packages help with mapping
-various ID schemes to each other.
-We load the `r Biocpkg("AnnotationDbi")` package and the annotation package
+目前为止，我们的结果表格中只包含 Ensembl 基因 ID，但是替换成基因名或许能给出更多的说明信息。
+Bioconductor 的基因注释包用于不同的 ID 格式间的彼此映射。
+我们加载 `r Biocpkg("AnnotationDbi")` 包和注释包
 `r Biocannopkg("org.Hs.eg.db")`:
 
 ```{r}
 library("AnnotationDbi")
 library("org.Hs.eg.db")
 ```
-
-This is the organism annotation package ("org") for
-*Homo sapiens* ("Hs"), organized as an *AnnotationDbi*
-database package ("db"), using Entrez Gene IDs ("eg") as primary key.
-To get a list of all available key types, use:
+这个是用于*人类*（“Hs”）的物种注释包，集成在 *AnnotationDbi* 数据包（“db”）中，
+用 Entrez 基因 ID 作为主键。要想列出所有可用的键的种类，使用：
 
 ```{r}
 columns(org.Hs.eg.db)
 ```
 
-We can use the *mapIds* function to add individual columns to our results
-table. We provide the row names of our results table as a key, and
-specify that `keytype=ENSEMBL`. The `column` argument tells the
-*mapIds* function which information we want, and the `multiVals`
-argument tells the function what to do if there are multiple possible
-values for a single input value. Here we ask to just give us back the
-first one that occurs in the database.
-To add the gene symbol and Entrez ID, we call *mapIds* twice.
+我们可以使用 *mapIds* 函数来在我们的结果表格中添加自己个人的列。我们将结果表中的行名作为键，
+并且指定 `keytype=ENSEMBL`。 `column` 参数告诉 *mapIds* 函数我们想要哪个信息，并且用
+ `multiVals` 参数告诉函数如果单个的输入值有多个可能的值时应该怎么做。这里我们只要要求
+返回给我们表格中的第一个。
+为了添加 gene symbol 和Entrez ID，我们调用 *mapIds* 两次。
 
 ```{r}
 res$symbol <- mapIds(org.Hs.eg.db,
@@ -1591,35 +1227,28 @@ res$entrez <- mapIds(org.Hs.eg.db,
                      multiVals="first")
 ```
 
-Now the results have the desired external gene IDs:
+现在结果表格中的基因 ID 是我们想要的 ID 了:
 
 ```{r}
 resOrdered <- res[order(res$pvalue),]
 head(resOrdered)
 ```
 
-## Exporting results
+## 结果导出
 
-You can easily save the results table in a CSV file that you can
-then share or load with a spreadsheet program such as Excel. The call to
-*as.data.frame* is necessary to convert the *DataFrame* object
-(`r Biocpkg("IRanges")` package) to a *data.frame* object that can be
-processed by *write.csv*. Here, we take just the top 100 genes for
-demonstration.
+您可以轻松地将结果表保存在 CSV 文件中，然后可以使用 Excel 等电子表格程序共享或加载该文件。
+您需要调用 *as.data.frame* 函数来将 *DataFrame* 对象（`r Biocpkg("IRanges")` 包）
+转换成能被 *write.csv* 函数处理的 *data.frame* 对象。这里，我们只用了 100 个基因来演示。
 
 ```{r eval=FALSE}
 resOrderedDF <- as.data.frame(resOrdered)[1:100, ]
 write.csv(resOrderedDF, file = "results.csv")
 ```
-
-A more sophisticated way for exporting results the Bioconductor
-package `r Biocpkg("ReportingTools")` [@Huntley2013ReportingTools].
-*ReportingTools* will automatically generate dynamic HTML documents,
-including links to external databases using gene identifiers
-and boxplots summarizing the normalized counts across groups.
-See the *ReportingTools* vignettes for full details. The simplest
-version of creating a dynamic *ReportingTools* report is performed
-with the following code:
+一个更完整的导出结果的方法是用 Bioconductor 包 
+`r Biocpkg("ReportingTools")` [@Huntley2013ReportingTools]。
+*ReportingTools* 会自动地产生动态 HTML 文件，该文件包含我们所使用的基因标识符的
+外部数据库链接，以及对样本间的标准化后的计数值进行了总结的箱线图。更多细节请参看 *ReportingTools* 指南。最简单的生成一个动态 *ReportingTools* 报告的方式
+是执行下面的代码：
 
 ```{r eval=FALSE}
 library("ReportingTools")
@@ -1630,17 +1259,12 @@ url <- finish(htmlRep)
 browseURL(url)
 ```
 
-## Plotting fold changes in genomic space
+##绘制基因组空间倍数变化图
 
-If we have used the *summarizeOverlaps* function to count the reads,
-then our *DESeqDataSet* object is built on top of ready-to-use
-Bioconductor objects specifying the genomic coordinates of the genes. We
-can therefore easily plot our differential expression results in
-genomic space. While the *results* function by default returns a
-*DataFrame*, using the `format` argument, we can ask for *GRanges* or
-*GRangesList* output. *lfcShrink* does not yet have the option to
-output *GRanges*, so we add the column of shrunken coefficients
-manually.
+如果前面我们使用了 *summarizeOverlaps* 函数来计数 reads，那么我们得到的 
+*DESeqDataSet* 对象是建立在可立即使用的，指定了基因组坐标的 Bioconductor 对象之上的。
+因而我们可以很容易的在基因组尺度上画出差异表达结果。 *results* 函数默认返回一个 *DataFrame*，
+使用 `format` 参数，我们得到 *GRanges* 或 *GRangesList* 输出。*lfcShrink* 还没有输出 *GRanges* 的选项，所以我们手动地添加收缩系数这一列。
 
 ```{r}
 resGR <- results(dds, name="dex_trt_vs_untrt", format="GRanges")
@@ -1648,24 +1272,22 @@ resGR$log2FoldChange <- res$log2FoldChange
 resGR
 ```
 
-We need to add the symbol again for labeling the genes on the plot:
+我们需要再一次的给图上的基因加上标签：
 
 ```{r}
 resGR$symbol <- mapIds(org.Hs.eg.db, names(resGR), "SYMBOL", "ENSEMBL")
 ```
 
-We will use the `r Biocpkg("Gviz")` package for plotting the GRanges
-and associated metadata: the log fold changes due to dexamethasone treatment.
+我们使用 `r Biocpkg("Gviz")` 包来绘制 GRanges 和相关的 meta 数据：由于地塞米松
+治疗产生的log 倍数变化。
 
 ```{r}
 library("Gviz")
 ```
 
-The following code chunk specifies a window of 1 million base pairs
-upstream and downstream from the gene with the smallest *p* value.
-We create a subset of our full results, for genes within the window.
-We add the gene symbol as a name if the symbol exists and is not duplicated in
-our subset.
+以下代码块提取最小 *p* 值所在基因上下游 1000000bp 的区域，我们从完整的结果中提取出
+该区域基因所在的子集。如果基因 Symbol 存在并且是唯一的，我们将基因 Symbol 作为该
+子集的名称。
 
 ```{r}
 window <- resGR[topGene] + 1e6
@@ -1675,21 +1297,17 @@ naOrDup <- is.na(resGRsub$symbol) | duplicated(resGRsub$symbol)
 resGRsub$group <- ifelse(naOrDup, names(resGRsub), resGRsub$symbol)
 ```
 
-We create a vector specifying if the genes in this subset had a low
-value of `padj`.
+创建一个向量以判断子集中的基因是否有低 *p* 值。
 
 ```{r}
 status <- factor(ifelse(resGRsub$padj < 0.1 & !is.na(resGRsub$padj),
                      "sig", "notsig"))
 ```
 
-We can then plot the results using `r Biocpkg("Gviz")` functions
-(figure below). We
-create an axis track specifying our location in the genome, a track
-that will show the genes and their names, colored by significance,
-and a data track that will draw vertical bars showing the moderated
-log fold change produced by *DESeq2*, which we know are only large
-when the effect is well supported by the information in the counts.
+然后我们可以用 `r Biocpkg("Gviz")` 函数将结果画出来（下图）。我们创建了一个坐标轴
+轨道来标示该区域在基因组上的坐标。另一个轨道显示基因及其名字，按照显著性来着色，另外
+一个数据轨道中画了一个垂直条，用来显示缩减后的 *DESeq2* 产生的 log 倍数变化，我们
+知道只有当计数值信息很好的支持了这个效应的时候，该倍数变化才会很大。
 
 ```{r gvizplot}
 options(ucscChromosomeNames = FALSE)
@@ -1701,45 +1319,33 @@ plotTracks(list(g, d, a), groupAnnotation = "group",
            notsig = "grey", sig = "hotpink")
 ```
 
-**log2 fold changes in genomic region surrounding the gene with smallest
-  adjusted *p* value.** Genes highlighted in pink have adjusted *p*
-  value less than 0.1.
+**最小 *p* 值基因及其邻近基因的 log 倍数变化。** 粉红色标记的基因的校正后 *p* 值小于 0.1.
 
 <a id="batch"></a>
 
-# Removing hidden batch effects
+# 移除隐含的批次效应
 
-Suppose we did not know that there were different cell lines involved
-in the experiment, only that there was treatment with
-dexamethasone. The cell line effect on the counts then would represent
-some hidden and unwanted variation that might be affecting
-many or all of the genes in the dataset. We can use statistical
-methods designed for RNA-seq from the `r Biocpkg("sva")` package
-[@Leek2014Svaseq] or the `r Biocpkg("RUVSeq")` package
-[@Risso2014Normalization] in Bioconductor to
-detect such groupings of the samples, and then we can add these to the
-*DESeqDataSet* design, in order to account for them. 
+假如我们不知道这个实验中有不同的细胞系，只知道有有地塞米松的处理。那么细胞系对计数的影响会
+产生一些隐藏的和不想要的变异，这些变异或许正在影响许多或所有的在数据集中的基因。我们
+可以使用 Bioconductor的 `r Biocpkg("sva")` 包或者 `r Biocpkg("RUVSeq")` 包
+中用于 RNA-seq 的统计方法来检测这样的样本批次，之后我们可以把这些添加到 *DESeqDataSet* 
+设计中以消除样本批次造成的影响。
 
-The *SVA* package uses the term *surrogate variables* for the estimated
-variables that we want to account for in our analysis, while the RUV
-package uses the terms *factors of unwanted variation* with the acronym "Remove Unwanted
-Variation" explaining the package title. We first use *SVA* to find
-hidden batch effects and then *RUV* following. 
+ *SVA* 包用术语 *surrogate variables* 来估算我们想在分析中解释的变量，而 *RUV*
+包用术语 *factors of unwanted variation* 和 "Remove Unwanted Variation"
+缩写来解释包的标题。我们首先用  *SVA* 来发现隐含的批次效应，之后用 *RUV*。
 
-## Using SVA with DESeq2
+## 用 SVA 方法
 
 ```{r}
 library("sva")
 ```
 
-Below we obtain a matrix of normalized counts for which the average count across
-samples is larger than 1. As we described above, we are trying to
-recover any hidden batch effects, supposing that we do not know the
-cell line information. So we use a full model matrix with the
-*dex* variable, and a reduced, or null, model matrix with only
-an intercept term. Finally we specify that we want to estimate 2
-surrogate variables. For more information read the manual page for the
-*svaseq* function by typing `?svaseq`.
+下面我们获得了一个归一化的计数的矩阵，其中每个基因在所有样本中的平均计数值大于 1。正如我们
+上面所描述的那样，在假设我们不知道细胞系信息的情况下，揭开那些隐含的批次效应。
+我们使用带有 *dex* 
+变量的完整模型矩阵，以及一个只带有截距项的简化的，或者空的模型矩阵。最终我们制定我们想要
+估算的两个代理变量。更多信息请键入 `?svaseq` 以查看手册上关于 *svaseq* 函数的页面。
 
 ```{r}
 dat  <- counts(dds, normalized = TRUE)
@@ -1751,8 +1357,7 @@ svseq <- svaseq(dat, mod, mod0, n.sv = 2)
 svseq$sv
 ```
 
-Because we actually do know the cell lines, we can see how well the
-SVA method did at recovering these variables (figure below).
+因为实际上我们知道细胞系的信息，所以我们可以看出 SVA 方法在揭开这些变量上做的好不好（下图）。
 
 ```{r svaplot}
 par(mfrow = c(2, 1), mar = c(3,5,3,1))
@@ -1762,14 +1367,12 @@ for (i in 1:2) {
  }
 ```
 
-**Surrogate variables 1 and 2 plotted over cell line.**
-Here, we know the hidden source of variation (cell line), and
-therefore can see how the SVA procedure is able to identify a source
-of variation which is correlated with cell line.
+**细胞系间的代理变量 1 和 代理变量 2**
+我们是知道隐藏的变异信息的（细胞系），所以我们能看出 SVA 程序是怎么鉴定出变异信息，从而
+对细胞系进行校正的。
 
-Finally, in order to use SVA to remove any effect on the counts from
-our surrogate variables, we simply add these two surrogate variables
-as columns to the *DESeqDataSet* and then add them to the design:
+最终，为了使用 SVA 从我们的代理变量移除任何对计数的影响，我们简单地将这两个代理变量作为
+ *DESeqDataSet* 中的列，并把它们添加到实验设计中去：
 
 ```{r}
 ddssva <- dds
@@ -1778,25 +1381,21 @@ ddssva$SV2 <- svseq$sv[,2]
 design(ddssva) <- ~ SV1 + SV2 + dex
 ```
 
-We could then produce results controlling for surrogate variables by
-running *DESeq* with the new design.
+之后我们可以在新的实验设计下运行 *DESeq* 来产生代理变量控制的结果。
 
-## Using RUV with DESeq2
+## 用 RUV 方法
 
-We can also use the *RUV* method in the *RUVSeq* package to detect the
-hidden batch effects.
+我们也可以使用 *RUVSeq* 包中的 *RUV* 方法来检测隐含的批次效应。
 
 ```{r}
 library("RUVSeq")
 ```
 
-We can use the `RUVg` function to estimate *factors of unwanted
-variation*, analogous to *SVA*'s *surrogate variables*. A difference
-compared to the *SVA* procedure above, is that we first would run
-*DESeq* and *results* to obtain the p-values for the analysis without
-knowing about the batches, e.g. just `~ dex`. Supposing that we have
-this results table `res`, we then pull out a set of *empirical control
-genes* by looking at the genes that do not have a small p-value.
+我们用 `RUVg` 函数来得到*隐藏的变量的因子*，这其实跟 *SVA*方法的*代理变量*是类似的。
+但与上面的 *SVA* 方法不同的是，这里我们会首先运行一下 *DESeq* 并导出结果来获得分析
+要用的 P 值，当然，这个 P 值是在没有消除批次效应的情况下产生的，所以我们的实验设计中
+只有 `~ dex`。假设我们现在已经得到了这样的结果表 `res`，之后我们通过 P 值筛选，提取出
+那些 P 值比较大的基因。
 
 ```{r}
 set <- newSeqExpressionSet(counts(dds))
@@ -1809,7 +1408,7 @@ set <- RUVg(set, empirical, k=2)
 pData(set)
 ```
 
-We can plot the factors estimated by *RUV*:
+我们可以画出 *RUV* 方法平评估出的因子：
 
 ```{r ruvplot}
 par(mfrow = c(2, 1), mar = c(3,5,3,1))
@@ -1819,10 +1418,9 @@ for (i in 1:2) {
  }
 ```
 
-**Factors of unwanted variation plotted over cell line.**
+**细胞系间的隐藏变量的因子**
 
-As before, if we wanted to control for these factors, we simply
-add them to the *DESeqDataSet* and to the design:
+像前面一样，如果我们想控制这些因子，只需要简单的把它们添加到 *DESeqDataSet* 和实验设计中去：
 
 ```{r}
 ddsruv <- dds
@@ -1831,24 +1429,20 @@ ddsruv$W2 <- set$W_2
 design(ddsruv) <- ~ W1 + W2 + dex
 ```
 
-We would then run *DESeq* with the new design to re-estimate the
-parameters and results.
+之后我们可以在新的设计下运行 *DESeq* 以重新评估参数和结果。
 
 <a id="time"></a>
 
-# Time course experiments
+# 时间进程实验
 
-*DESeq2* can be used to analyze time course experiments, for example
-to find those genes that react in a condition-specific manner over
-time, compared to a set of baseline samples.
-Here we demonstrate a basic time course analysis with the
- `r Biocexptpkg("fission")` data package,
-which contains gene counts for an RNA-seq time course of fission
-yeast [@Leong2014Global]. The yeast were exposed to oxidative stress, and half of the
-samples contained a deletion of the gene *atf21*.
-We use a design formula that models the strain difference at time 0,
-the difference over time, and any strain-specific differences over
-time (the interaction term `strain:minute`).
+*DESeq2* 可用于分析时间进程实验，例如找到那些与对照样本相比，随着时间条件的改变
+表达发生变化的基因。这里，我们用 `r Biocexptpkg("fission")` 数据包的
+来演示一个基础的时间进程分析，该数据包中是有关裂殖酵母时间进程的 RNA-seq 的基因计数
+信息[@Leong2014Global]。这些酵母用氧化应激的条件进行了处理，并且其中的一半存在 
+*atf21* 基因的缺失。
+我们用一个设计公式来对 0 时的压力差异，整个时间进程的差异，以及时间进程中任何的特定压力
+差异进行建模（交互项叫 `strain:minute`）。
+
 
 ```{r}
 library("fission")
@@ -1856,12 +1450,9 @@ data("fission")
 ddsTC <- DESeqDataSet(fission, ~ strain + minute + strain:minute)
 ```
 
-The following chunk of code performs a likelihood ratio test, where we remove
-the strain-specific differences over time. Genes with small *p* values
-from this test are those which at one or more time points after time
-0 showed a strain-specific effect. Note therefore that this will not
-give small *p* values to genes that moved up or down over time in the
-same way in both strains.
+下面的代码块执行似然比检验，我们移除了时间进程中特定压力差异。该检验中 *p* 值小的基因是那些
+在 0 时之后的一个或更多的时间点变现出了特定压力效应的基因。注意，在两中压力中
+中以同一种方式随时间变化的基因不会被给予小的 *p* 值。
 
 ```{r fissionDE}
 ddsTC <- DESeq(ddsTC, test="LRT", reduced = ~ strain + minute)
@@ -1870,33 +1461,26 @@ resTC$symbol <- mcols(ddsTC)$symbol
 head(resTC[order(resTC$padj),], 4)
 ```
 
-This is just one of the tests that can be applied to time
-series data. Another option would be to model the counts as a
-smooth function of time, and to include an interaction term of the
-condition with the smooth function. It is possible to build such a
-model using spline basis functions within R, and another, more modern approach
-is using Gaussian processes [@Tonner2016].
+这个只是能够应用到时间系列数据的检验之一。另一个可选项是将计数建模为一个时间的平滑函数，
+并且在平滑函数中包含一个条件的交互项。可以使用 R 中的基函数来建立这个模型，更加现代的方法
+使用高斯过程[@Tonner2016]。
 
-We can plot the counts for the groups over time using
-`r CRANpkg("ggplot2")`, for the gene with the smallest adjusted *p* value,
-testing for condition-dependent time profile and accounting for
-differences at time 0 (figure below). Keep in mind that the interaction terms are the
-*difference* between the two groups at a given time after accounting for
-the difference at time 0.
+
+我们可以用 `r CRANpkg("ggplot2")` 画出以时间分组的计数值，对于校正后 *p* 值最小的
+那个基因，检验条件依赖的时间表达谱，从而解释了 0 时的这种差异。记住，交互项是在一个能
+解释 0 时的差异的特定时间点上，两组之间的*差异*。
 
 ```{r fissioncounts, fig.width=6, fig.height=4.5}
 fiss <- plotCounts(ddsTC, which.min(resTC$padj), 
                    intgroup = c("minute","strain"), returnData = TRUE)
-fiss$minute <- as.numeric(as.character(fiss$minute))
 ggplot(fiss,
-  aes(x = minute, y = count, color = strain, group = strain)) + 
-  geom_point() + stat_summary(fun.y=mean, geom="line") +
-  scale_y_log10()
+  aes(x = as.numeric(minute), y = count, color = strain, group = strain)) + 
+  geom_point() + geom_smooth(se = FALSE, method = "loess") + scale_y_log10()
 ```
-**Normalized counts for a gene with condition-specific changes over time.**
 
-Wald tests for the log2 fold changes at individual time points can be
-investigated using the `test` argument to *results*:
+**一个某个条件随着时间变化的基因的标准化计数值。**
+
+可以使用 *results* 的 `test` 参数来调出某一时间点上的 log2 倍数变化的 Wald 检验：
 
 ```{r}
 resultsNames(ddsTC)
@@ -1904,15 +1488,15 @@ res30 <- results(ddsTC, name="strainmut.minute30", test="Wald")
 res30[which.min(resTC$padj),]
 ```
 
-We can furthermore cluster significant genes by their profiles. We
-extract a matrix of the shrunken log2 fold changes using the *coef* function:
+我们还可以通过基因表达谱来聚类基因。使用 *coef* 函数来提取出一个缩减的 log2 倍数变化
+的矩阵：
 
 ```{r}
 betas <- coef(ddsTC)
 colnames(betas)
 ```
 
-We can now plot the log2 fold changes in a heatmap (figure below). 
+现在我们可以在热图中画出 log2 倍数变化（下图）。
 
 ```{r fissionheatmap}
 topGenes <- head(order(resTC$padj),20)
@@ -1924,32 +1508,26 @@ pheatmap(mat, breaks=seq(from=-thr, to=thr, length=101),
          cluster_col=FALSE)
 ```
 
-**Heatmap of log2 fold changes for genes with smallest adjusted *p* value.**
-The bottom set of genes show strong induction of expression for the
-baseline samples in minutes 15-60 (red boxes in the bottom left
-corner), but then have slight differences for the mutant strain
-(shown in the boxes in the bottom right corner).
+**有着最小校正后的 *p* 值的基因的 log2 倍数变化热图。**
+
+底部的那组基因表现出 15-60 分钟内的对对照样本的强烈的诱导表达（左下角的红色框），但是对
+突变压力只有轻微的差异（展示在右下角的框里）。
 
 <a id="ref"></a>
 
-# Session information
+# 会话信息
 
-As the last part of this document, we call the function *sessionInfo*,
-which reports the version numbers of R and all the packages used in
-this session. It is good practice to always keep such a record of this
-as it will help to track down what has happened in case an R script
-ceases to work or gives different results because the functions have
-been changed in a newer version of one of your packages. By including
-it at the bottom of a script, your reports will become more reproducible.
+这是此文档的最后一部分，我们调用 *sessionInfo* 函数，报告在此次会话中使用的 R 版本
+和所有的包的版本。这种做法很好，因为如果你的包更新了版本，其中的函数可能发生了变化，导致
+R 脚本停止工作或者给出了不同的结果，这个习惯就会对你有所帮助。将会话信息放在脚本的底部，
+那么你的文档会具有更好的可复用性。
 
-The session information should also *always*
-be included in any emails to the
-[Bioconductor support site](https://support.bioconductor.org) along
-with all code used in the analysis.
+会话信息应该总是连同在分析中使用的代码一起，包含在发给
+[Bioconductor 维护站点](https://support.bioconductor.org) 的邮件中。
 
 ```{r}
 devtools::session_info()
 ```
 
-# References
+# 参考文献
 
