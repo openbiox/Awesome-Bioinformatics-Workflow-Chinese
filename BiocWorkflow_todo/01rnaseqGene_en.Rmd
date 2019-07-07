@@ -434,7 +434,7 @@ colData(se)
 
 <a id="construct"></a>
 
-# *DESeqDataSet*对象，样本信息和设计公式
+# *DESeqDataSet* 对象，样本信息和设计公式
 
 Bioconductor 软件包通常定义和使用自定义的类来存储数据，以确保始终提供所有需要的数据槽并满足
 分析需求。此外，Bioconductor有通用性的数据类（如 *SummarizedExperiment* ）可用于在包之
