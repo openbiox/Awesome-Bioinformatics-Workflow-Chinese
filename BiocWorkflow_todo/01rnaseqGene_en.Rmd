@@ -1,5 +1,5 @@
 ---
-title: "RNA-seq 工作流程: 基因水平的探索性分析和差异表达分析"
+title: "RNA-seq 工作流程: 基因水平的探索性和差异表达分析"
 author:
 - name: Michael I. Love
   affiliation: 
@@ -18,7 +18,7 @@ vignette: >
   %\VignetteIndexEntry{RNA-seq workflow at the gene level}
   %\VignetteEngine{knitr::rmarkdown}
 abstract: |
- 这里我们使用 Bioconductor 包执行一个端到端的基因水平 RNA-seq 差异表达分析流程。我们将从FASTQ     文件开始，展示其如何与参考基因组比对，如何准备每个样本中每个基因的 RNA-seq 片段的计数矩阵。我们会进行探索性数据分析（EDA）以完成质量评估，并且为了探索样本之间的关系，执行差异基因表达分析，最后对结果进行可视化。
+ 这里我们使用 Bioconductor 平台的软件包执行一个端到端的基因水平 RNA-seq 差异表达分析流程。我们将从  FASTQ 文件开始，展示其如何与参考基因组比对，如何准备每个样本中每个基因的 RNA-seq 片段的计数矩阵。我们会进行探索性数据分析（EDA）以完成质量评估。并且，为了探索样本之间的关系，我们将执行差异基因表达分析和可视化。
 
 ---
 
@@ -48,18 +48,18 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE,
 
 # 介绍
 
-Bioconductor 有许多用于分析高通量测序数据的包, 如 RNA（RNA-seq）测序等。
-我们在这个工作流中使用的包包括由 Bioconductor 核心团队维护的核心包，用来导入
+Bioconductor 有许多软件包可用于分析高通量测序数据, 包括 RNA（RNA-seq）测序。
+我们将在这个工作流中使用的包包括由 Bioconductor 核心团队维护的核心包，用来导入
 和处理原始的序列数据并加载基因注释。我们也会用其他的包进行统计分析和数据可视化。
-通过每6个月一次的发布计划，bioconductor 项目可以确保所有发布的包在整体上运行流畅。
+通过每6个月一次的发布计划，Bioconductor 项目可以确保所有发布的包在整体上运行流畅
 （这也是 “conductor” 一词的隐喻）。本工作流程中使用的包用
-*library* 函数加载，并可以通过以下链接安装
+*library()* 函数加载，并可以通过以下链接安装
 [Bioconductor 包安装说明](http://bioconductor.org/install/#install-bioconductor-packages)。
 
-此工作流程的已发布（但基本相似）版本，包含有审阅报告和评论见
+一个包含有审阅报告和评审意见的公开发表版本（与本文基本相似）参见
 [F1000Research](http://f1000research.com/articles/4-1070)。
 
-如果您对此工作流程或 Bioconductor 软件有任何疑问，请将这些发布到
+如果您对此工作流程或 Bioconductor 软件有任何疑问，请将它发布到
 [Bioconductor 维护站点](https://support.bioconductor.org/)。
 如果你的问题涉及特定的包，你可以在发布中加上包的名字作为标签, 如果是关于工作流的一般性问题,
 在发布中加上标签 `rnaseqgene`。请参考
@@ -70,8 +70,8 @@ Bioconductor 有许多用于分析高通量测序数据的包, 如 RNA（RNA-seq
 
 本流程使用了存储在 `r Biocexptpkg("airway")` 包中的数据，该数据来源于一个用地塞米松
 （一种有抗炎作用的合成类糖皮质激素）处理呼吸道平滑肌细胞的 RNA-seq 实验
-[@Himes2014RNASeq]。糖皮质激素用于，诸如，减少哮喘病人的呼吸道炎症。实验中，
-四个原代的人呼吸道平滑肌细胞系用 1μmol 地塞米松处理 18 小时，每个细胞系都有一个处理的样本
+[@Himes2014RNASeq]。糖皮质激素用于诸如呼吸道炎症中以减少病人哮喘。实验中，
+四个人呼吸道平滑肌原代细胞系用 1μmol 地塞米松处理 18 小时，每个细胞系都有一个处理的样本
 和未处理的对照样本。关于该实验的更多内容参见
 [PubMed entry 24926665](http://www.ncbi.nlm.nih.gov/pubmed/24926665)，
 该实验的原始数据参见
@@ -81,12 +81,12 @@ Bioconductor 有许多用于分析高通量测序数据的包, 如 RNA（RNA-seq
 
 # 准备计数矩阵
 
-那些基于计数的统计方法，例如
-`r Biocpkg("DESeq2")` [@Love2014Moderated],
-`r Biocpkg("edgeR")` [@Robinson2009EdgeR],
-`r Biocpkg("limma")` with the voom method [@Law2014Voom],
-`r Biocpkg("DSS")` [@Wu2013New], 
-`r Biocpkg("EBSeq")` [@Leng2013EBSeq] and
+基于计数的统计方法，例如
+`r Biocpkg("DESeq2")` [@Love2014Moderated]、
+`r Biocpkg("edgeR")` [@Robinson2009EdgeR]、
+`r Biocpkg("limma")` with the voom method [@Law2014Voom]、
+`r Biocpkg("DSS")` [@Wu2013New]、
+`r Biocpkg("EBSeq")` [@Leng2013EBSeq] 以及
 `r Biocpkg("baySeq")` [@Hardcastle2010BaySeq],
 期望的输入数据是从 RNA-seq 等高通量测序实验中获得的，一个整数格式的矩阵。
 矩阵中 *i* 行和 *j* 列的值表示样本 *j* 中的基因 *i* 有多少 reads（对于双端测序来说，
@@ -102,8 +102,8 @@ Bioconductor 有许多用于分析高通量测序数据的包, 如 RNA（RNA-seq
 
 在演示如何比对并计数 RNA-seq 片段之前，我们推荐一种更新更快的用于转录本丰度
 定量的可选流程，诸如：
-[Salmon](https://combine-lab.github.io/salmon/) [@Patro2017Salmon]，
-[Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/) [@Patro2014Sailfish]，
+[Salmon](https://combine-lab.github.io/salmon/) [@Patro2017Salmon]、
+[Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/) [@Patro2014Sailfish]、
 [kallisto](https://pachterlab.github.io/kallisto/) [@Bray2016Near]，或者
 [RSEM](http://deweylab.github.io/RSEM/) [@Li2011RSEM]，
 它们可以在没有比对 reads 的情况下估算转录丰度，接着用 `r Biocpkg("tximport")` 包来组装
@@ -137,19 +137,19 @@ RNA-seq 实验的计算分析从 FASTQ 文件开始，该文件含有每个 read
 位点的质量分数。这些 reads 首先与参考基因组或转录组进行比对，或者像上面描述的那样，
 在未比对的情况下估算转录本的丰度和计数值。不管哪种情况，一定要知道这个测序实验是单端
 的还是双端的，因为比对软件会要求用户为双端实验指定两个 FASTQ 文件。此比对步骤的结果
-通常会存储在一个[SAM/BAM](http://samtools.github.io/hts-specs)格式的文件。
+通常会存储在一个 [SAM/BAM](http://samtools.github.io/hts-specs) 格式的文件。
 
 许多的软件都能用于和参考基因组的 reads 比对，我们建议你查阅相关文献，以了解不同软件
 的优缺点，比如精度，拼接点处的比对灵敏度，速度，内存需求，实用性等等。
 我们在这里使用
 [STAR read aligner](https://code.google.com/p/rna-star/) [@Dobin2013STAR] 
-来将我们当前实验的 reads 和 Ensemblrelease 75 [@Flicek2014Ensembl] 人类参考基
+来将我们当前实验的 reads 和 Ensembl release 75 [@Flicek2014Ensembl] 人类参考基
 因组进行比对。
 在下面的示例代码中，假设当前目录中有一个名为 `files` 的文件，文件的每一行包含一个实验
-的标识符，所有的FASTQ文件在二级目录 `fastq` 中。如果你已经从 SRA 数据库（Sequence 
-Read Archive）下载了FASTQ文件，
-那么标识符就是 SRA 的 run ID，比如 `SRR1039520`。双端实验的每个ID有两个文件，`fastq/SRR1039520_1.fastq1` 和 `fastq/SRR1039520_2.fastq`，分别表示双端片段的第一个
-和第二个 read 。如果你做的是单端实验，那么每个 ID 只有一个文件。我们建立一个二级目录 `aligned`，用于存储 STAR 的输出的比对文件。
+的标识符，所有的 FASTQ 文件在二级目录 `fastq` 中。如果你已经从 SRA 数据库（Sequence 
+Read Archive）下载了 FASTQ 文件，
+那么标识符就是 SRA 的 run ID，比如 `SRR1039520`。双端实验的每个 ID 有两个文件，`fastq/SRR1039520_1.fastq1` 和 `fastq/SRR1039520_2.fastq`，分别表示双端片段的第一个
+和第二个 read。如果你做的是单端实验，那么每个 ID 只有一个文件。我们建立一个二级目录 `aligned`，用于存储 STAR 输出的比对文件。
 
 ```
 for f in `cat files`; do STAR --genomeDir ../STAR/ENSEMBL.homo_sapiens.release-75 \
@@ -170,8 +170,8 @@ BAM 文件可以用于生成计数矩阵，这会在下面的章节中进行描�
 
 除了后面要用的计数矩阵，`r Biocexptpkg("airway")` 包还包含其他 8 个文件，这是实验中
 全部的 reads 数目的一个小子集，选取的是与 1 号染色体的一个小区域比对的 reads。因为完整
-的比对文件太大了（每个样本大约几个GB），并且计算每个样本的片段数都需要10-30分钟，因此我们
-选取了 reads 的一个子集用于演示。我们会使用这些文件来演示如何从BAM文件中建立一个计数矩阵。
+的比对文件太大了（每个样本大约几个 GB），并且计算每个样本的片段数都需要 10-30 分钟，因此我们
+选取了 reads 的一个子集用于演示。我们会使用这些文件来演示如何从 BAM 文件中建立一个计数矩阵。
 之后，我们会加载完整的包含全部样本和全部数据的计数矩阵，该矩阵在 `r Biocexptpkg("airway")` 
 包中同样有提供，后续的分析会使用完整的矩阵。
 
@@ -181,7 +181,7 @@ BAM 文件可以用于生成计数矩阵，这会在下面的章节中进行描�
 library("airway")
 ```
 
-R函数 *system.file* 用于查找包中的文件在你的计算机中上的安装路径。R一般把外部数据，比如
+R 函数 *system.file* 用于查找包中的文件在你的计算机中上的安装路径。R 一般把外部数据，比如
 “airway” 中的数据，放在 “extdata” 路径下，这里我们查找 “extdata” 的完整路径并赋值给 
 indir。
 
@@ -218,7 +218,7 @@ sampleTable
 *tximport* [@Soneson2015Differential],
 *htseq-count* [@Anders2015HTSeqa].
 
-function            | package                                              | framework      | output                 | *DESeq2* input function
+函数                | R 包                                                 | 框架            | 输出                   | *DESeq2* 输入函数
 --------------------|------------------------------------------------------|----------------|------------------------|-------------------------
 *summarizeOverlaps* | `r Biocpkg("GenomicAlignments")`                     | R/Bioconductor | *SummarizedExperiment* | *DESeqDataSet*
 *featureCounts*     | `r Biocpkg("Rsubread")`                              | R/Bioconductor | matrix                 | *DESeqDataSetFromMatrix*
@@ -233,8 +233,8 @@ filenames <- file.path(indir, paste0(sampleTable$Run, "_subset.bam"))
 file.exists(filenames)
 ```
 
-`r Biocpkg("Rsamtools")` 包给BAM文件提供了一个R接口，其中的 *BamFileList* 函数指定应用于
-这里的文件。这里我们也指出了关于如何处理BAM文件的细节，比如一次只能处理200万的 reads，键入 
+`r Biocpkg("Rsamtools")` 包给BAM文件提供了一个 R 接口，其中的 *BamFileList* 函数指定应用于
+这里的文件。这里我们也指出了关于如何处理 BAM 文件的细节，比如一次只能处理 200 万的 reads，键入 
 `?BamFileList` 可以获得更多信息。
 
 ```{r Rsamtools}
@@ -268,15 +268,15 @@ seqinfo(bamfiles[1])
 对于从 UCSC Genome Browser [@Kent2002Human]得到的 *已知基因* ，您可以使用预先建立的
 转录本数据库：`r Biocannopkg("TxDb.Hsapiens.UCSC.hg19.knownGene")`。
 如果注释文件可以从 `r Biocpkg("AnnotationHub")` 获取（像 Ensembl 基因一样），
-那么可以用 *makeTxDbFromGRanges* 函数导入一个预扫描好的 GFT 文件。
+那么可以用 *makeTxDbFromGRanges* 函数导入一个预扫描好的 GTF 文件。
 
-这里我们演示从 GFT 文件处加载 *TxDb* 对象：
+这里我们演示从 GTF 文件处加载 *TxDb* 对象：
 
 ```{r genfeat}
 library("GenomicFeatures")
 ```
 
-我们用一个长度为 0 的字符矢量来说明没有一个序列（染色体）是环状的。
+我们用一个长度为 0 的字符向量来说明没有一个序列（染色体）是环状的。
 
 ```{r txdb}
 gtffile <- file.path(indir,"Homo_sapiens.GRCh37.75_subset.gtf")
@@ -302,7 +302,7 @@ ebg
 **注意：** 如果是想用多核进行并行计算，您可以在执行计算之前使用
 `r Biocpkg("BiocParallel")` 包中的 *register* 和 *MulticoreParam* 或 *SnowParam* 
 函数。对于有 3000 万条比对 reads 的人 RNA-seq 文件，
-`summarizeOverlaps` 的调用预计会在每个文件上耗费至少30分钟的时间。
+`summarizeOverlaps` 的调用预计会在每个文件上耗费至少 30 分钟的时间。
 而通过多核并行计算，这个过程会快得多。
 
 ```{r}
@@ -326,18 +326,18 @@ se <- summarizeOverlaps(features=ebg, reads=bamfiles,
                         fragments=TRUE )
 ```
 
-我们在 `features` 和 `reads` 之外还指定了许多的参数。参数 `mode` 表示那一种
+我们在 `features` 和 `reads` 之外还指定了许多的参数。参数 `mode` 表示哪一种
 read 重叠将会被计数。 全部的 modes 参见`r Biocpkg("GenomicAlignments")` 包
-的 *Counting reads with summarizeOverlaps* 使用指南的图 1。
+的 *用 summarizeOverlaps 来计算 reads* 使用指南的图 1。
 注意 fragments 在每个基因中只会被计数一次，即使它们重叠在一个基因的多个外显子中。
 将 `singleEnd` 设置为 `FALSE` 表示测序实验是双端测序，因此我们在一个基因的计算过程中
-将一对reads只计算一次。
+将一对 reads 只计算一次。
 当 `singleEnd=FALSE` 时， `fragments` 参数可以被用于指定未成对的reads是否应该被计数。
 （TRUE表示计数）。
 
 为了生成正确的计数，弄清楚 RNA-seq 实验是否具有链特异性非常重要。 这个实验不是链特异性的，
 所以我们设置 `ignore.strand` 为 `TRUE`。
-然而，有些链特异性的实验会存在一些 reads hi对齐到基因的负链上的情况。
+然而，有些链特异性的实验会存在一些 reads 对齐到基因的负链上的情况。
 用户必须检查其实验是否是链特异性的，如果是，reads 应该同基因的正链还是负链比对。
 对于各种计数/定量工具，有不同的方法指定是计数正链还是负链，目前这个任务用 *htseq-count*，
 *featureCounts*, 或者前面提到的转录本量化软件都能很容易的完成。
@@ -345,7 +345,7 @@ read 重叠将会被计数。 全部的 modes 参见`r Biocpkg("GenomicAlignment
 reads/fragments 的预期数目是否一致。
 此外，也可以用基因组可视化工具来直观地检查比对的结果。
 
-## SummarizedExperiment 查看
+## SummarizedExperiment
 
 ```{r sumexp, echo=FALSE}
 par(mar=c(0,0,0,0))
@@ -367,7 +367,7 @@ text(67.5,85,"colData")
 中包含了计数矩阵，`rowRanges` （蓝色快）中包含基因组距离信息，`colData` （绿色快）包含
 了样本信息。每个色块中高亮的行表示第一行（注意 `colData` 的第一行与`assay`的第一列是对齐的。）
 
-*SummarizedExperiment* 图解如上，在最新的 Bioconductor 文章中有z关于它的讨论
+*SummarizedExperiment* 图解如上，在最新的 Bioconductor 文章中有关于它的讨论
 [@Huber2015Orchestrating]。在我们的这个例子中，我们生成了一个名为 "counts" 的单矩阵，
 其包含每个样本和基因的 fragment 计数值，存储在 `assay`中。在 `assays` 中存储多个计数
 矩阵也是可以的。
@@ -387,14 +387,14 @@ head(assay(se), 3)
 colSums(assay(se))
 ```
 
-`rowRanges` 在打印时,只展示第一个 *GRanges*，并告诉我们还有19个元素：
+`rowRanges` 在打印时,只展示第一个 *GRanges*，这里告诉我们还有 19 个元素：
 
 ```{r}
 rowRanges(se)
 ```
 
-`rowRanges`也包含与 `metadata` 槽中的基因模型的构建有关的元数据。
-这里我们使用`str`这个R函数来简洁的展示metadata。
+`rowRanges` 也包含与 `metadata` 槽中的基因模型的构建有关的元数据。
+这里我们使用 `str` 这个 R 函数来简洁的展示 metadata。
 
 ```{r}
 str(metadata(rowRanges(se)))
@@ -406,8 +406,8 @@ str(metadata(rowRanges(se)))
 colData(se)
 ```
 
-`colData`插槽目前还是空的，而它应该包含所有的 meta 数据。因为我们使用 `sampleTable`
-de 一列来生成` bamfiles` 向量，所以我们知道 `se` 列的顺序和 `sampleTable` 行的顺序是
+`colData` 插槽目前还是空的，而它应该包含所有的 meta 数据。因为我们使用 `sampleTable` 
+这一列来生成 `bamfiles` 向量，所以我们知道 `se` 列的顺序和 `sampleTable` 行的顺序是
 一样的。因此我们可以将 `sampleTable` 转化为数据框然后利用分配函数将其作为总结性实验的 `colData`。
 
 ```{r}
@@ -419,10 +419,10 @@ colData(se)
 
 现在，我们已经根据指定的基因模型算出了重叠在基因上的 fragments，这是一个分支点，此处我们
 可以使用为数众多的 Bioconductor 包对算得的数据进行探索性分析和差异表达分析。包括
-`r Biocpkg("edgeR")` [@Robinson2009EdgeR],
-`r Biocpkg("limma")` with the voom method [@Law2014Voom],
-`r Biocpkg("DSS")` [@Wu2013New],
-`r Biocpkg("EBSeq")` [@Leng2013EBSeq] and
+`r Biocpkg("edgeR")` [@Robinson2009EdgeR]、
+含 voom 方法的 `r Biocpkg("limma")` [@Law2014Voom]、
+`r Biocpkg("DSS")` [@Wu2013New]、
+`r Biocpkg("EBSeq")` [@Leng2013EBSeq] 以及
 `r Biocpkg("baySeq")` [@Hardcastle2010BaySeq].
 @Schurch2016How
 [compared performance](https://www.ncbi.nlm.nih.gov/pmc/articles/pmid/27022035/) 
@@ -437,13 +437,13 @@ colData(se)
 # *DESeqDataSet* 对象，样本信息和设计公式
 
 Bioconductor 软件包通常定义和使用自定义的类来存储数据，以确保始终提供所有需要的数据槽并满足
-分析需求。此外，Bioconductor有通用性的数据类（如 *SummarizedExperiment* ）可用于在包之
-间转移数据。此外，Bionconductor的核心类提供了一些有用的功能函数：例如，对一个 *SummarizedExperiment*
- 的行或列取子集或者重排序，会自动对相应的 *rowRanges*和colData* 也取子集或重排序，从而
+分析需求。此外，Bioconductor 有通用性的数据类（如 *SummarizedExperiment* ）可用于在包之
+间转移数据。此外，Bionconductor 的核心类提供了一些有用的功能函数：例如，对一个 *SummarizedExperiment*
+ 的行或列取子集或者重排序，会自动对相应的 *rowRanges* 和 *colData* 也取子集或重排序，从而
 可以避免意外的样本交换，以防止产生虚假的结果。这些都已经在 *SummarizedExperiment* 的底
 层设置好了。
 
-在 *DESeq2* 中，自定义的类叫做 *DESeqDataSet*。它建立于 *SummarizedExperiment*类
+在 *DESeq2* 中，自定义的类叫做 *DESeqDataSet*。它建立于 *SummarizedExperiment* 类
 之上，所以很容易将 *SummarizedExperiment* 对象转变成 *DESeqDataSet* 对象，如下所示。
 两者之间的主要的区别是 `assay` 插槽被替之以 *counts* 存取器访问函数，并且 
 *DESeqDataSet* 类
@@ -454,7 +454,7 @@ Bioconductor 软件包通常定义和使用自定义的类来存储数据，以�
 校正是例外情况，它不依赖于设计公式）。设计公式能够告诉我们在样本信息表中的哪些列指定了
 实验设计以及这些因素在数据分析中应该如何使用。
 
-最简单的用于差异表达分析的设计公式是 `~ condition`，`condition`是 `colData(dds)`
+最简单的用于差异表达分析的设计公式是 `~ condition`，`condition` 是 `colData(dds)`
  中的一列，该列指定这两组样本（或者更多的组）属于哪一个 condition。对于这个呼吸道实验，
 我们会指定 `~ cell + dex` ，意思是我们想测试地塞米松（`dex`）在不同的细胞系中作用的
 差异。我们可以在 *SummarizedExperiment* 或者 *DESeqDataSet* 中用 `$` 来查看每一列。
@@ -464,7 +464,7 @@ se$cell
 se$dex
 ```
 
-**注意：** 在R中，将因子的第一个水平设为参考水平更加合适。（比如，对照的或者未处理的样本），所以
+**注意：** 在 R 中，将因子的第一个水平设为参考水平更加合适。（比如，对照的或者未处理的样本），所以
 我们可以像这样 *relevel* `dex` 因子：
 
 ```{r sedex}
@@ -489,7 +489,7 @@ se$dex <- relevel(se$dex, "untrt")
 接下来的部分，我们会用两种方法来展示 *DESeqDataSet* 的构建：
 
 * 从一个 *SummarizedExperiment* 对象开始
-* 从一个技术矩阵和一个样本信息表开始
+* 从一个计数矩阵和一个样本信息表开始
 
 有关用 Python 包 *HTSeq* 来计数 read 的完整示例，请查看 `r Biocexptpkg("pasilla")` 
 指南。有关用 *htseq-count* 产出的文件来生成 *DESeqDataSet* 的示例请查看
@@ -555,7 +555,7 @@ dds <- DESeqDataSet(se, design = ~ cell + dex)
 虽然之前的部分是从 *SummarizedExperiment* 中构建 *DESeqDataSet*，这里我们依然
 首先从 *SummarizedExperiment* 中提取出个别对象（计数矩阵和样本信息），从而回退建立
 一个新的对象——仅仅是为了演示而已。
-在实际操作中，计数矩阵不是从一个文件从读取，就是从类似 *featureCounts* 这样的
+在实际操作中，计数矩阵不是从一个文件中读取，就是从类似 *featureCounts* 这样的
 `r Biocpkg("Rsubread")` 包 [@Liao2014FeatureCounts]中的 R 函数生成的。
 
  *SummarizedExperiment* 中的信息可以通过访问函数来访问。例如，查看实际的数据，在这里
@@ -577,7 +577,7 @@ coldata <- colData(se)
 
 现在我们已经有了生成数据对象的所有的要素，并且它们呈现为一种适合分析的格式，它们是：
 
-* `countdata`: 一个计数片段的表格
+* `countdata`: 一个 fragments 的计数表格
 * `coldata`: 一个样本信息的表格
 
 为了用计数矩阵和样本信息表格构建 *DESeqDataSet* 对象，我们使用如下代码：
@@ -594,7 +594,7 @@ ddsMat <- DESeqDataSetFromMatrix(countData = countdata,
 
 # 探索性分析和可视化
 
-本工作流程有两个不同的方向：第一个方向是 *计数值的转换*，这部分是为了可视化的
+本工作流程有两个不同的方向：第一个方向是 *计数值的转换*，这部分是为了可视化地
 探索样本之间的关系。第二个方向我们会回退到原始的计数值进行 *统计检验*。统计检
 验的方法依赖于原始的计数值数据（未经缩放或转换）来计算测量方法的精确度。
 
@@ -623,7 +623,7 @@ nrow(dds)
 方法是在标准化计数值上加上一个伪计数值后取对数；然而，这时表达量极低的那些基因又会对结果
 造成比较大的影响，因为低计数值固有的强烈的泊松噪声以及对数计算对低表达基因差异的放大，使那些
 低表达的基因会显示出更强的样本间差异。我们可以快速地用一些模拟数据来展示计数值的这种特性。
-（这里，泊松计数值有一个从0.1到100的 lambda 范围）。我们画出了每
+（这里，泊松计数值有一个从 0.1 到 100 的 lambda 范围）。我们画出了每
 一行（基因）均值的标准差：
 
 ```{r meanSdCts}
@@ -681,7 +681,7 @@ rld <- rlog(dds, blind = FALSE)
 head(assay(rld), 3)
 ```
 
-在上面的函数调用中，我们设置了 `blind = FALSE` ，意思是着细胞系和处理之间的差异
+在上面的函数调用中，我们设置了 `blind = FALSE`，意思是着细胞系和处理之间的差异
 （实验设计中的变量）将不会影响实验预期的方差-均值趋势。这个转换中并没有用到实验设计
 的信息，实验设计仅在估计计数值的总体变异性时用到过。对于完全的*无监督*转换，可以
 设置 `blind = TRUE` （这是默认设置）。
@@ -715,11 +715,11 @@ ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
 直线 y=x 的偏差）用于样本距离计算和 PCA 绘图。
 
 我们可以看见低计数值的基因（左下角）似乎在一般的对数尺度上变化很大，对于那些在差异表达
-上提供了很少信息的数据，VST 和rlog 压缩了低计数值基因之间的差异。
+上提供了很少信息的数据，VST 和 rlog 压缩了低计数值基因之间的差异。
 
 ## 样本距离
 
-RNA-seq分析一个有效的第一步通常是评估样本之间的相似性：哪些样本彼此相似，哪些是不
+RNA-seq 分析一个有效的第一步通常是评估样本之间的相似性：哪些样本彼此相似，哪些是不
 相似的？这些符合实验设计的预期吗？
 
 我们用R函数 *dist* 来计算样本之间的欧几里得距离。为了保证所有的基因在距离计算中贡献大致
@@ -757,9 +757,9 @@ pheatmap(sampleDistMatrix,
          col = colors)
 ```
 
-**使用了rlog转换值的样本间距离热图**
+**使用了 rlog 转换值的样本间距离热图**
 
-注意我们已经改变了距离矩阵中的行名，现在的行名是处理类型-病人的编号，
+注意我们已经改变了距离矩阵中的行名，现在的行名是「处理类型-病人编号」，
 这样我们就能在看热图时看到所有的这些信息。
 
 另一个计算样本距离的选择是使用 *Poisson Distance* [@Witten2011Classification]，
@@ -791,7 +791,7 @@ pheatmap(samplePoisDistMatrix,
 
 另一种可视化样本到样本距离的方式是主成分分析（PCA）。在这种方法中，数据点(这里指样本）
 映射到 2 维度、平面，他们分散在两个方向上，这两个方向能解释大多数的差异（下图所示）。
-X轴是数据点差异最大的方向。这个方向的样本的值记为 *PC1* 。y轴是数据点差异第二大方向
+x 轴是数据点差异最大的方向。这个方向的样本的值记为 *PC1* 。y轴是数据点差异第二大方向
 （必须和第一个方向呈*直角*）。这个方向的样本的值记为 *PC2*。
 每个方向的总体方差的百分数写在坐标轴标签中。注意这个百分比相加不等于 100%，因为还有更多的
 维度中包含有剩下的差异。（虽然这些维度的差异占比非常小）。
@@ -828,15 +828,15 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
 **用自定义的 *ggplot2* 代码画的 VST 值的 PCA 图**
 这里我们指定了细胞系（形状）和地塞米松处理（颜色）。
 
-从PCA图中，我们看出不同细胞之间的差异是相当大的（不同的形状），但是地塞米松治疗的
+从 PCA 图中，我们看出不同细胞之间的差异是相当大的（不同的形状），但是地塞米松治疗的
 差异更大（红色 VS 蓝色）。这展示了为什么在不同的检验要用这种成对的设计来解释这个
 的重要性（“paired”，即在*相同*细胞系中每个地塞米松治疗样本都有一个对应的
 未治疗的样本）。之前我们已经通过设计公式 `~ cell + dex` 来建立了这种设计。
 
 ## MDS 图
 
-另一个和 PCA 图很相似的图，可以用基于 R 的 *multidimensional scaling* (MDS) 
-函数来绘制。当我们没有数据矩阵，只有距离矩阵时，这个图会很有用。这里我们分析了用 *VST* 
+另一个和 PCA 图很相似的图，可以用基于 R 的 *多维尺度变换* (MDS) 
+函数来绘制。当我们没有数据矩阵，只有距离矩阵时，这个图就很有用。这里我们分析了用 *VST* 
 数据计算出的距离上的 MDS，并画成了下图。
 
 ```{r mdsrlog, fig.width=6, fig.height=4.5}
@@ -909,7 +909,7 @@ mcols(res, use.names = TRUE)
 阐明如何获得其他的对比。
 
 `log2FoldChange` 列是效应值估计。它是指地塞米松治疗样本与不治疗样本对比，有多少基因
-表达改变了。这个值是一个以 2 为底的 log 值：例如，log2 倍数变化为1.5 的意思是基因
+表达改变了。这个值是一个以 2 为底的 log 值：例如，log2 倍数变化为 1.5 的意思是基因
 表达增加了 \(2^{1.5} \约为 2.82\)倍。
 
 当然，这个估计值有不确定性，这个不确定性在 `lfcSE` 列中表示，该列是 log2 倍数变化
@@ -960,8 +960,8 @@ table(resLFC1$padj < 0.1)
 ## 其他比较
 
 总之，一个变量的任何两个水平之间的比较结果可以用 *results* 的 `contrast` 参数提取到。
-用户要指定3个值：变量的名字，分子上的水平的名字以及分母上的水平的名字。这里我们提取了两个
-细胞系之间的log2倍数变化的结果：
+用户要指定 3 个值：变量的名字，分子上的水平的名字以及分母上的水平的名字。这里我们提取了两个
+细胞系之间的 log2 倍数变化的结果：
 
 ```{r}
 results(dds, contrast = c("cell", "N061011", "N61311"))
@@ -975,9 +975,9 @@ results(dds, contrast = c("cell", "N061011", "N61311"))
 ## 多重检验
 
 在高通量生物学中，我们不要急着直接用 *p* 值来否定无效假设，而要用 *多重检验*
-来进行校正。如果我们简单地将 *p* 值的临界值设定为一个比较低的值会怎样，比如0.05？
+来进行校正。如果我们简单地将 *p* 值的临界值设定为一个比较低的值会怎样，比如 0.05？
 那么对于该检验中成功反馈的 `r sum(!is.na(res$pvalue))` 个基因，有 
-`r sum(res$pvalue < .05, na.rm=TRUE)` 个基因的 *p* 小于0.05。
+`r sum(res$pvalue < .05, na.rm=TRUE)` 个基因的 *p* 小于 0.05。
 
 ```{r sumres}
 sum(res$pvalue < 0.05, na.rm=TRUE)
@@ -987,7 +987,7 @@ sum(!is.na(res$pvalue))
 现在，假设对所有基因来说，无效假设都是对的，即没有基因受到了地塞米松处理的影响。
 那么，基于 *p* 值的定义，我们期望在所有的基因中有 5% 的基因的 *p* 值低于 0.05。
 这总共是 `r round(sum(!is.na(res$pvalue)) * .05 )` 个基因。
-如果我们认为 *p* 值低于0.05的这一基因列表是差异表达的，那么该列表应该包含多达
+如果我们认为 *p* 值低于 0.05 的这一基因列表是差异表达的，那么该列表应该包含多达
 `r round(sum(!is.na(res$pvalue)) * .05)` /
 `r sum(res$pvalue < .05, na.rm=TRUE)` =
 `r round(sum(!is.na(res$pvalue))*.05 / sum(res$pvalue < .05, na.rm=TRUE) * 100)`%
@@ -995,8 +995,8 @@ sum(!is.na(res$pvalue))
 
 *DESeq2* 用 R 的基础函数 *p.adjust* 来执行 Benjamini-Hochberg (BH) 校正
 [@Benjamini1995Controlling]。这个方法简单来说就是，为每个基因计算一个校正后的 *p* 
-值，该值回答了以下问题：如果一个经检验为显著的基因，它的校正后 *p* 值小于等于这个基因
-的校正后 *p* 值的阈值，那么在此意义上，所有的显著性基因假阳性率（ *错误发现率*, FDR）
+值，该值回答了以下问题：如果一个经检验为显著差异的基因，它的校正后 *p* 值小于等于这个基因
+的校正后 *p* 值的阈值，那么在此意义上，所有的显著性差异基因的假阳性率（ *错误发现率*, FDR）
 是多少？这个值被叫做 BH 调整 *p* 值，在 `res` 对象的 `padj` 列中给出。
 
 FDR 在很多的高通量实验的统计中都很有用，因为我们通常只关注感兴趣的基因，
@@ -1030,7 +1030,7 @@ head(resSig[ order(resSig$log2FoldChange, decreasing = TRUE), ])
 ## 计数值绘图
 
 要可视化地展示一个特定基因的计数值，最快的方法是用 *plotCounts* 函数，该函数需要
-以下参数：*DESeqDataSet*对象，基因名，以及要画图的那一组。（下图）
+以下参数：*DESeqDataSet* 对象，基因名，以及要画图的那一组。（下图）
 
 ```{r plotcounts}
 topGene <- rownames(res)[which.min(res$padj)]
@@ -1054,14 +1054,14 @@ ggplot(geneCounts, aes(x = dex, y = count, color = cell, group = cell)) +
   scale_y_log10() + geom_point(size = 3) + geom_line()
 ```
 
-**将细胞系用线连起来的标准化计数值.**
+**将细胞系用线连起来的标准化计数值。**
 注意 *DESeq* 检验实际上考虑到了细胞系的影响，所以这个图更准确的描绘了检验的差异。
 
 ## MA 图
 
  *MA-plot* 展示了一个针对模型评估系数分布情况的概览，例如，在全部基因的尺度上对我们感兴趣的
-变量进行比较， 在 Y 轴上，"M" 代表 "minus"，
-在X轴上，"A" 代表 "average"，此图也称为为均值差异图或者 Bland-Altman 图。
+变量进行比较， 在 y 轴上，"M" 代表 "minus"，
+在 x 轴上，"A" 代表 "average"，此图也称为为均值差异图或者 Bland-Altman 图。
 
 在绘制 MA 图之前，我们用 *lfcShrink* 函数来缩减地塞米松治疗样本和未治疗样本之间的 
 log2 倍数差异范围。 *DESeq2* 中有 3 种缩减方法，详见 [DESeq2 指南](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html)。
@@ -1082,7 +1082,7 @@ plotMA(res, ylim = c(-5, 5))
 
 **由实验处理导致变化的 MA 图。**
 Y 轴是特定比较间的 log2 倍数变化值，X 轴是经过了尺寸因子标准化后的计数值的均值。
-每个点代表一个基因。校正后的 *p* 值小于阈值（这里是0.1，默认的）的基因用红色表示。
+每个点代表一个基因。校正后的 *p* 值小于阈值（这里是 0.1，默认的）的基因用红色表示。
 
 
  *DESeq2* 包使用贝叶斯方法来缓和（或者说“缩减”）那些计数值极低而计数值的变化又非常
@@ -1090,7 +1090,7 @@ Y 轴是特定比较间的 log2 倍数变化值，X 轴是经过了尺寸因子�
  收窄了。如上所示， 我们用 *lfcShrink* 函数执行这个操作。
  关于缩减倍数变化原理的更详细解释，请参见 *DESeq2* 的文献[@Love2014Moderated]。
 
-如果我们没有用统计调节来缩减嘈杂的log2倍数变化，我们可能会看到下图：
+如果我们没有用统计调节来缩减嘈杂的 log2 倍数变化，我们可能会看到下图：
 
 ```{r plotmaNoShr}
 res.noshr <- results(dds, name="dex_trt_vs_untrt")
@@ -1117,7 +1117,7 @@ hist(res$pvalue[res$baseMean > 1], breaks = 0:20/20,
      col = "grey50", border = "white")
 ```
 
-**标准化计数值大于 1 的基因的 *p* 值直方图**
+**标准化计数值大于 1 的基因的 *p* 值直方图。**
 
 ## 基因聚类
 
@@ -1142,7 +1142,7 @@ anno <- as.data.frame(colData(vsd)[, c("cell","dex")])
 pheatmap(mat, annotation_col = anno)
 ```
 
-**样本间 VST 转换值相关性热图**
+**样本间 VST 转换值相关性热图。**
 药物处理情况和细胞系信息通过热图顶部的彩色条显示。基因的色块随着样本的变化而变化。
 注意热图顶部的那一组基因，它们将将 N061011 细胞系和其他细胞系分开了。在热图的中间
 的一组基因，在地塞米松处理的样本中表达量更高。
@@ -1178,14 +1178,14 @@ barplot(fractionSig, xlab = "mean normalized count",
 *独立性过滤* 实现。
 
  *DESeq2* 软件自动执行独立性过滤，即最大化调整 *p* 值小于临界值的基因
-（默认的 `alpha`是0.01）。这个自动的独立性过滤是通过 *results* 
+（默认的 `alpha`是 0.01）。这个自动的独立性过滤是通过 *results* 
 来执行和控制的。
 
 *independent* 这个术语强调了一个重要的警告。只有当我们过滤的统计量（这里是所有样本的
 标准化计数值的均值）不依赖于无效假设下的实际检验的统计量（ *p* 值），这种过滤才是被
 允许的。否则，过滤会导致检验无效，最终导致 BH 过程的假设无效。
-独立性过滤软件使用 `r Biocpkg("genefilter")` 包中的 *DESeq2* ，
-其中包含一个描述独立性过滤的统计学基础的参考文献 [@Bourgon2010Independent]。
+*DESeq2* 中的独立性验证功能来自于 `r Biocpkg("genefilter")` 包，
+该包中包含一个描述独立性过滤的统计学基础的参考文献 [@Bourgon2010Independent]。
 
 <a id="annotate"></a>
 
@@ -1432,14 +1432,14 @@ design(ddsruv) <- ~ W1 + W2 + dex
 
 <a id="time"></a>
 
-# 时间进程实验
+# 时序实验
 
-*DESeq2* 可用于分析时间进程实验，例如找到那些与对照样本相比，随着时间条件的改变
+*DESeq2* 可用于分析时序实验，例如找到那些与对照样本相比，随着时间条件的改变
 表达发生变化的基因。这里，我们用 `r Biocexptpkg("fission")` 数据包的
-来演示一个基础的时间进程分析，该数据包中是有关裂殖酵母时间进程的 RNA-seq 的基因计数
+来演示一个基础的时序分析，该数据包中是有关裂殖酵母时序的 RNA-seq 的基因计数
 信息[@Leong2014Global]。这些酵母用氧化应激的条件进行了处理，并且其中的一半存在 
 *atf21* 基因的缺失。
-我们用一个设计公式来对 0 时的压力差异，整个时间进程的差异，以及时间进程中任何的特定压力
+我们用一个设计公式来对 0 时的压力差异，整个时序的差异，以及时序中任何的特定压力
 差异进行建模（交互项叫 `strain:minute`）。
 
 
@@ -1449,8 +1449,8 @@ data("fission")
 ddsTC <- DESeqDataSet(fission, ~ strain + minute + strain:minute)
 ```
 
-下面的代码块执行似然比检验，我们移除了时间进程中特定压力差异。该检验中 *p* 值小的基因是那些
-在 0 时之后的一个或更多的时间点变现出了特定压力效应的基因。注意，在两中压力中
+下面的代码块执行似然比检验，我们移除了时序中特定压力差异。该检验中 *p* 值小的基因是那些
+在 0 时之后的一个或更多的时间点变现出了特定压力效应的基因。注意，在两种压力中
 中以同一种方式随时间变化的基因不会被给予小的 *p* 值。
 
 ```{r fissionDE}
